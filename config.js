@@ -1,30 +1,38 @@
-import dotenv from "dotenv";
-dotenv.config();
+require('dotenv').config();
 
-const conf = {
-  AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "on",
-  AUTO_LIKE: process.env.AUTO_LIKE || "on",
-  AUTO_READ_DM: process.env.AUTO_READ_DM || "off",
-  AUTO_DOWNLOAD_STATUS: process.env.AUTO_DOWNLOAD_STATUS || "off",
-  ADM: process.env.ANTI_DELETE || "on",
-  ON: process.env.OWNER_NAME || "FLASH-MD",
-  ANTICALL: process.env.ANTICALL || "off",
-  ANTIPROMOTE: process.env.ANTIPROMOTE || "off",
-  ANTIDEMOTE: process.env.ANTIDEMOTE || "off",
-  ANTILINK: process.env.ANTILINK || "off",
-  ANTILINK_ACTION: process.env.ANTILINK_ACTION || "delete",
-  timezone: process.env.TIME_ZONE || "Africa/Nairobi",
-  PRESENCE_DM: process.env.DM_PRESENCE || "typing",
-  PRESENCE_GROUP: process.env.GROUP_PRESENCE || "paused",
-  MODE: process.env.MODE || "private",
-  AV: process.env.AV || "on",
-  PREFIXES: process.env.PREFIX !== undefined 
-  ? process.env.PREFIX.split(",").map(p => p.trim()) 
-  : [""], 
-  Session: process.env.SESSION || "",
-  NUMBER: process.env.OWNER_NUMBER || "",
-  HEROKU_API_KEY: process.env.HEROKU_API_KEY || "",
-  HEROKU_APP_NAME: process.env.HEROKU_APP_NAME || ""
+function mapPresence(val) {
+    const mapping = {
+        typing: 'composing',
+        online: 'available',
+        recording: 'recording',
+        paused: 'paused',
+        offline: 'unavailable'
+    };
+    return mapping[val?.toLowerCase()?.trim()] || 'paused';
+}
+
+module.exports = {
+    prefixes: process.env.PREFIX
+        ? process.env.PREFIX.split(',').map(p => p.trim())
+        : [''],
+
+    NUMBER: process.env.YOUR_NUMBER || '254742063632',
+    MODE: (process.env.MODE || 'private').toLowerCase().trim(),
+    WARN_LIMIT: process.env.WARNINGS || '3',
+    ON: process.env.YOUR_NAME || 'FLASH-MD',
+    ANTICALL: process.env.ANTICALL || 'on',
+    ADM: process.env.ANTIDELETE || 'on',
+    AUTO_VIEW_STATUS: process.env.AUTO_READ_STATUS === 'on',
+    AUTO_LIKE: process.env.AUTO_LIKE === 'on',
+    AUTO_READ_MESSAGES: process.env.AUTO_READ_DM === 'on',
+    HEROKU_API_KEY: process.env.HEROKU_API_KEY,
+    HEROKU_APP_NAME: process.env.HEROKU_APP_NAME,
+   ALIVE_URL: process.env.ALIVE_URL,
+    sessionBase64: process.env.SESSION || '',
+    timezone: 'Africa/Nairobi',
+    USER_LID: process.env.YOUR_LID || null,
+    PRESENCE_DM: mapPresence(process.env.PRESENCE_DM || 'typing'),
+    PRESENCE_GROUP: mapPresence(process.env.PRESENCE_GROUP || 'recording'),
+
+    mapPresence
 };
-
-export default conf;
