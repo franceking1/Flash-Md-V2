@@ -20,8 +20,8 @@ module.exports = [
                     key: { fromMe: false, participant: '0@s.whatsapp.net', remoteJid: 'status@broadcast' },
                     message: {
                         contactMessage: {
-                            displayName: 'FLASH-MD-V2',
-                            vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;a,;;;\nFN:'FLASH-MD-V2'\nitem1.TEL;waid=${senderId}:${senderId}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
+                            displayName: 'IRON-MAN-MD',
+                            vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;a,;;;\nFN:'IRON-MAN-MD'\nitem1.TEL;waid=${senderId}:${senderId}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
                         },
                     },
                 }
@@ -36,7 +36,7 @@ module.exports = [
                         key: pingMsg.key,
                         type: 14,
                         editedMessage: {
-                            conversation: `🏓 Pong!\n⏱️ *_Flash-Md-V2.5 Speed: ${latency} ms_*`,
+                            conversation: `🏓 Pong!\n⏱️ *IRON-MAN-MD-MV2.5 Speed: ${latency} ms_*`,
                         },
                     },
                 },
@@ -66,8 +66,8 @@ module.exports = [
                     key: { fromMe: false, participant: '0@s.whatsapp.net', remoteJid: 'status@broadcast' },
                     message: {
                         contactMessage: {
-                            displayName: 'FLASH-MD-V2',
-                            vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;a,;;;\nFN:'FLASH-MD-V2'\nitem1.TEL;waid=${senderId}:${senderId}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
+                            displayName: 'IRON-MAN-MD',
+                            vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;a,;;;\nFN:'IRON-MAN-MD-V2'\nitem1.TEL;waid=${senderId}:${senderId}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
                         },
                     },
                 }
