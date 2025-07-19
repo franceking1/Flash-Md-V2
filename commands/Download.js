@@ -69,7 +69,7 @@ _Use this info to explore or install the package via terminal_`;
                         forwardingScore: 1,
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363238139244263@newsletter',
+                            newsletterJid: '120363347365643318@newsletter',
                             newsletterName: 'FLASH-MD',
                             serverMessageId: -1
                         }
@@ -107,13 +107,13 @@ _Use this info to explore or install the package via terminal_`;
       if (data.status && data.BK9 && data.BK9.high) {
         await sock.sendMessage(chatId, {
           video: { url: data.BK9.high },
-          caption: "🎥 *FLASH-MD* Video Downloader (High Quality)",
+          caption: "🎥 *Joshuamambo1-MD* Video Downloader (High Quality)",
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
-              newsletterJid: '120363238139244263@newsletter',
-              newsletterName: 'FLASH-MD',
+              newsletterJid: '120363347365643318@newsletter',
+              newsletterName: 'Joshuamambo1-MD',
               serverMessageId: -1
             }
           }
@@ -167,8 +167,8 @@ _Use this info to explore or install the package via terminal_`;
               forwardingScore: 1,
               isForwarded: true,
               forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363238139244263@newsletter',
-                newsletterName: 'FLASH-MD',
+                newsletterJid: '120363347365643318@newsletter',
+                newsletterName: 'Joshuamambo1-MD',
                 serverMessageId: -1
               }
             }
@@ -230,7 +230,7 @@ _Use this info to explore or install the package via terminal_`;
         }, { quoted: msg });
       }
 
-      const caption = `*🔞 THE FLASH-MD X-Video Downloader 🥵*\n\n` +
+      const caption = `*🔞 THE Joshuamambo1-MD X-Video Downloader 🥵*\n\n` +
                       `• *Title:* ${videoData.title}\n` +
                       `• *Duration:* ${videoData.duration}s\n` +
                       `• *Info:* ${videoData.info}\n` +
@@ -243,8 +243,8 @@ _Use this info to explore or install the package via terminal_`;
           forwardingScore: 1,
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363238139244263@newsletter',
-            newsletterName: 'FLASH-MD',
+            newsletterJid: '120363347365643318@newsletter',
+            newsletterName: 'Joshuamambo1-MD',
             serverMessageId: -1
           }
         }
@@ -324,8 +324,8 @@ _Use this info to explore or install the package via terminal_`;
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: '120363238139244263@newsletter',
-        newsletterName: 'FLASH-MD',
+        newsletterJid: '120363347365643318@newsletter',
+        newsletterName: 'Joshuamambo1-MD',
         serverMessageId: -1
       }
     };
@@ -347,7 +347,7 @@ _Use this info to explore or install the package via terminal_`;
           if (media.url) {
             await sock.sendMessage(chatId, {
               video: { url: media.url },
-              caption: "FLASH-MD INSTA DOWNLOADER - Video",
+              caption: "Joshuamambo1-MD INSTA DOWNLOADER - Video",
               contextInfo
             }, { quoted: msg });
             await sock.sendMessage(chatId, { text: "Done Downloading your Video!" }, { quoted: msg });
@@ -358,7 +358,7 @@ _Use this info to explore or install the package via terminal_`;
           if (media.thumbnail) {
             await sock.sendMessage(chatId, {
               image: { url: media.thumbnail },
-              caption: "FLASH-MD INSTA DOWNLOADER - Image",
+              caption: "Joshuamambo1-MD INSTA DOWNLOADER - Image",
               contextInfo
             }, { quoted: msg });
             await sock.sendMessage(chatId, { text: "Done Downloading Your Image!" }, { quoted: msg });
@@ -474,8 +474,8 @@ _Use this info to explore or install the package via terminal_`;
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: '120363238139244263@newsletter',
-        newsletterName: 'FLASH-MD',
+        newsletterJid: '120363347365643318@newsletter',
+        newsletterName: 'Joshuamambo1-MD',
         serverMessageId: -1
       }
     };
@@ -499,7 +499,7 @@ _Use this info to explore or install the package via terminal_`;
 
           await sock.sendMessage(chatId, {
             video: { url: result.hd },
-            caption: "_╰►FB VIDEO DOWNLOADED BY_ *FLASH-MD*",
+            caption: "_╰►FB VIDEO DOWNLOADED BY_ *Joshuamambo1-MD*",
             contextInfo
           }, { quoted: msg });
         })
@@ -530,8 +530,8 @@ _Use this info to explore or install the package via terminal_`;
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: '120363238139244263@newsletter',
-        newsletterName: 'FLASH-MD',
+        newsletterJid: '120363347365643318@newsletter',
+        newsletterName: 'Joshuamambo1-MD',
         serverMessageId: -1
       }
     };
@@ -555,7 +555,7 @@ _Use this info to explore or install the package via terminal_`;
 
           await sock.sendMessage(chatId, {
             video: { url: result.sd },
-            caption: "_╰►FACEBOOK VIDEO DOWNLOADED BY_ *FLASH-MD*",
+            caption: "_╰►FACEBOOK VIDEO DOWNLOADED BY_ *Joshuamambo1-MD*",
             contextInfo
           }, { quoted: msg });
         })
@@ -586,8 +586,8 @@ _Use this info to explore or install the package via terminal_`;
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: '120363238139244263@newsletter',
-        newsletterName: 'FLASH-MD',
+        newsletterJid: '120363347365643318@newsletter',
+        newsletterName: 'Joshuamambo1-MD',
         serverMessageId: -1
       }
     };
@@ -615,7 +615,7 @@ _Use this info to explore or install the package via terminal_`;
           `Discovered By: ${result.discovered_by}`;
 
         await sock.sendMessage(chatId, {
-          text: "A moment, FLASH-MD is sending your results"
+          text: "A moment, Joshuamambo1-MD is sending your results"
         }, { quoted: msg });
 
         if (result.image) {
@@ -656,8 +656,8 @@ _Use this info to explore or install the package via terminal_`;
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: '120363238139244263@newsletter',
-        newsletterName: 'FLASH-MD',
+        newsletterJid: '120363347365643318@newsletter',
+        newsletterName: 'Joshuamambo1-MD',
         serverMessageId: -1
       }
     };
@@ -688,13 +688,13 @@ _Use this info to explore or install the package via terminal_`;
       }
 
       await sock.sendMessage(chatId, {
-        text: "FLASH-MD is sending you 5 BLACKPINK IMAGES"
+        text: "IRON-MAN-MD is sending you 5 BLACKPINK IMAGES"
       }, { quoted: msg });
 
       for (const imageUrl of selectedImages) {
         await sock.sendMessage(chatId, {
           image: { url: imageUrl },
-          caption: "_╰►DOWNLOADED BY_ *FLASH-MD*",
+          caption: "_╰►DOWNLOADED BY_ *Joshuamambo1-MD*",
           contextInfo
         }, { quoted: msg });
       }
@@ -725,8 +725,8 @@ _Use this info to explore or install the package via terminal_`;
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: '120363238139244263@newsletter',
-        newsletterName: 'FLASH-MD',
+        newsletterJid: '120363347365643318@newsletter',
+        newsletterName: 'IRON-MAN-MD',
         serverMessageId: -1
       }
     };
@@ -748,7 +748,7 @@ _Use this info to explore or install the package via terminal_`;
       const stories = apiResponse.data.BK9;
 
       await sock.sendMessage(chatId, {
-        text: `*Instagram Story Downloader*\n\n` +
+        text: `*IRON-MAN Instagram Story Downloader*\n\n` +
               `╭───────────────◆\n` +
               `│⿻ *Instagram User:* ${username}\n` +
               `│⿻ *Total Stories:* ${stories.length}\n` +
@@ -804,8 +804,8 @@ const contextInfo = {
   forwardingScore: 1,
   isForwarded: true,
   forwardedNewsletterMessageInfo: {
-    newsletterJid: '120363238139244263@newsletter',
-    newsletterName: 'FLASH-MD',
+    newsletterJid: '120363347365643318@newsletter',
+    newsletterName: 'IRON-MAN-MD',
     serverMessageId: -1
   }
 };
@@ -841,7 +841,7 @@ const contextInfo = {
         mimetype: `application/${file.mime.toLowerCase()}`,
         caption:
           `╰► *MediaFire Download Completed!*\n` +
-          `Downloaded by: *FLASH-MD*\n\n` +
+          `Downloaded by: *IRON-MAN-MD*\n\n` +
           `📂 *Name:* ${file.name}\n` +
           `📦 *Size:* ${file.size}\n` +
           `📄 *Type:* ${file.filetype}\n` +
@@ -871,8 +871,8 @@ const contextInfo = {
   forwardingScore: 1,
   isForwarded: true,
   forwardedNewsletterMessageInfo: {
-    newsletterJid: '120363238139244263@newsletter',
-    newsletterName: 'FLASH-MD',
+    newsletterJid: '120363347365643318@newsletter',
+    newsletterName: 'IRON-MAN-MD',
     serverMessageId: -1
   }
 };
@@ -948,8 +948,8 @@ const contextInfo = {
             forwardingScore: 1,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
-              newsletterJid: '120363238139244263@newsletter',
-              newsletterName: 'FLASH-MD',
+              newsletterJid: '120363347365643318@newsletter',
+              newsletterName: 'IRON-MAN-MD',
               serverMessageId: -1
             }
           }
@@ -1021,7 +1021,7 @@ const contextInfo = {
                     document: { url: downloadLink },
                     mimetype: 'application/vnd.android.package-archive',
                     fileName: `${apk.name}.apk`,
-                    caption: `*📥 APK DOWNLOADER*
+                    caption: `*📥 IRON-MAN-APK DOWNLOADER*
 
 *📌 App:* ${apk.name}
 *📎 Type:* APK File
@@ -1031,13 +1031,13 @@ const contextInfo = {
                 await sock.sendMessage(chatId, {
                     text: `✅ Successfully fetched and sent APK for *${apk.name}*.
 
-_Enjoy using the app. Powered by FLASH-MD_`,
+_Enjoy using the app. Powered by Joshuamambo1-MD_`,
                     contextInfo: {
                         forwardingScore: 1,
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363238139244263@newsletter',
-                            newsletterName: 'FLASH-MD',
+                            newsletterJid: '120363347365643318@newsletter',
+                            newsletterName: 'Joshuamambo1-MD',
                             serverMessageId: -1
                         }
                     }
@@ -1096,8 +1096,8 @@ _Enjoy using the app. Powered by FLASH-MD_`,
                         forwardingScore: 1,
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363238139244263@newsletter',
-                            newsletterName: 'FLASH-MD',
+                            newsletterJid: '120363347365643318@newsletter',
+                            newsletterName: 'IRON-MAN-MD',
                             serverMessageId: -1
                         }
                     }
@@ -1108,21 +1108,21 @@ _Enjoy using the app. Powered by FLASH-MD_`,
                 if (/image\//.test(contentType)) {
                     return await sock.sendMessage(chatId, {
                         image: buffer,
-                        caption: '> > *POWERED BY FLASH-MD*'
+                        caption: '> > *POWERED BY IRON-MAN-MD*'
                     }, meta);
                 }
 
                 if (/video\//.test(contentType)) {
                     return await sock.sendMessage(chatId, {
                         video: buffer,
-                        caption: '> > *POWERED BY FLASH-MD*'
+                        caption: '> > *POWERED BY IRON-MAN-MD*'
                     }, meta);
                 }
 
                 if (/audio\//.test(contentType)) {
                     return await sock.sendMessage(chatId, {
                         audio: buffer,
-                        caption: '> > *POWERED BY FLASH-MD*'
+                        caption: '> > *POWERED BY IRON-MAN-MD*'
                     }, meta);
                 }
 
@@ -1141,7 +1141,7 @@ _Enjoy using the app. Powered by FLASH-MD_`,
                     document: buffer,
                     mimetype: contentType,
                     fileName: 'fetched_content',
-                    caption: '> > *POWERED BY FLASH-MD*'
+                    caption: '> > *POWERED BY MIDKING-MD*'
                 }, meta);
             } catch (err) {
                 return await sock.sendMessage(chatId, {
