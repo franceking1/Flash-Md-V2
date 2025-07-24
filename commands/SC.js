@@ -21,12 +21,12 @@ module.exports = {
             const createdAt = new Date(data.created_at).toLocaleDateString('en-GB');
             const lastUpdated = new Date(data.pushed_at).toLocaleDateString('en-GB');
 
-            const repoInfo = `*🤖 FLASH-MD-V2*
+            const repoInfo = `*🤖 IRON-MAN-MD*
 
 A powerful, open-source WhatsApp bot built for speed, reliability, and ease of use. Designed to deliver blazing-fast responses and rich features for groups and individuals.
 
 *📂 GitHub Repository:*
-https://github.com/franceking1/Flash-Md-V2
+https://github.com/Muchinyanya/Kudazvinhu
 
 *⭐ Stars:* ${stars}
 *🍴 Forks:* ${forks}
@@ -41,8 +41,8 @@ _Star ⭐ the repository if you like the bot and want to support future developm
                     forwardingScore: 1,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363238139244263@newsletter',
-                        newsletterName: 'FLASH-MD',
+                        newsletterJid: '120363347365643318@newsletter',
+                        newsletterName: 'IRON-MAN-MD',
                         serverMessageId: -1
                     }
                 }
