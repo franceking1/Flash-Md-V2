@@ -21,13 +21,13 @@ module.exports = {
 
       if (data.result) {
         const isImage = data.result.endsWith('.jpg') || data.result.endsWith('.png');
-        const caption = `*FLASH-MD V2*\n🔗 Downloaded from: ${url}`;
+        const caption = IRON-MAN-MD*\n🔗 Downloaded from: ${url}`;
 
         const messageContent = {
           caption,
           contextInfo: {
             externalAdReply: {
-              title: "FLASH-MD V2 - Media Downloader",
+              title: "IRON-MAN-MD - Media Downloader",
               body: "Fast & Reliable Downloader",
               mediaType: 1,
               thumbnailUrl: data.imageUrl || '',

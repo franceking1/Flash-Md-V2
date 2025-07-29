@@ -50,7 +50,7 @@ module.exports = [
         const message = {
           image: { url: video.thumbnail },
           caption:
-            `*FLASH-MD SONG PLAYER*\n\n` +
+            IRON-MAN-MD SONG PLAYER*\n\n` +
             `╭───────────────◆\n` +
             `│⿻ *Title:* ${video.title}\n` +
             `│⿻ *Duration:* ${video.timestamp}\n` +
@@ -63,8 +63,8 @@ module.exports = [
             forwardingScore: 1,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
-              newsletterJid: '120363238139244263@newsletter',
-              newsletterName: 'FLASH-MD',
+              newsletterJid: '120363347365643318@newsletter',
+              newsletterName: 'IRON-MAN-MD',
               serverMessageId: -1
             }
           }
@@ -132,7 +132,7 @@ module.exports = [
         const message = {
           image: { url: video.thumbnail },
           caption:
-            `*FLASH-MD SONG PLAYER*\n\n` +
+            IRON-MAN-MD SONG PLAYER*\n\n` +
             `╭───────────────◆\n` +
             `│⿻ *Title:* ${video.title}\n` +
             `│⿻ *Duration:* ${video.timestamp}\n` +
@@ -145,8 +145,8 @@ module.exports = [
             forwardingScore: 1,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
-              newsletterJid: '120363238139244263@newsletter',
-              newsletterName: 'FLASH-MD',
+              newsletterJid: '120363347365643318@newsletter',
+              newsletterName: 'IRON-MAN-MD',
               serverMessageId: -1
             }
           }
@@ -214,7 +214,7 @@ module.exports = [
         const message = {
           image: { url: video.thumbnail },
           caption:
-            `*FLASH-MD VIDEO PLAYER*\n\n` +
+            *`IRON-MAN-MD VIDEO PLAYER*\n\n` +
             `╭───────────────◆\n` +
             `│⿻ *Title:* ${video.title}\n` +
             `│⿻ *Duration:* ${video.timestamp}\n` +
@@ -227,8 +227,8 @@ module.exports = [
             forwardingScore: 1,
             isForwarded: true,
             forwardedNewsletterMessageInfo: {
-              newsletterJid: '120363238139244263@newsletter',
-              newsletterName: 'FLASH-MD',
+              newsletterJid: '120363347365643318@newsletter',
+              newsletterName: 'IRON-MAN-MD',
               serverMessageId: -1
             }
           }

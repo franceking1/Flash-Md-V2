@@ -33,8 +33,8 @@ const createQuotedContact = (senderId) => ({
     key: { fromMe: false, participant: '0@s.whatsapp.net', remoteJid: 'status@broadcast' },
     message: {
         contactMessage: {
-            displayName: 'FLASH-MD-V2',
-            vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;a,;;;\nFN:FLASH-MD-V2\nitem1.TEL;waid=${senderId}:${senderId}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
+            displayName: 'IRON-MAN-MD',
+            vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;a,;;;\nFN:IRON-MAN-MD\nitem1.TEL;waid=${senderId}:${senderId}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
         },
     },
 });
@@ -71,7 +71,7 @@ module.exports = [
             const start = now();
 
             const initialMsg = await king.sendMessage(fromJid, {
-                text: '🔄 Checking bot status...'
+                text: '🔄 Checking bot status... alongside HULK'
             }, {
                 quoted: createQuotedContact(senderId)
             });
@@ -84,12 +84,12 @@ module.exports = [
             const platform = detectPlatform();
             const ramUsage = (process.memoryUsage().rss / 1024 / 1024).toFixed(1);
 
-            const finalText = `🟢 *FLASH-MD-V2 IS ONLINE*
+            const finalText = `🟢 *IRON-MAN-MD IS ONLINE*
 
 *⏱️ Uptime:* ${formattedUptime}
 *🏓 Ping:* ${latency} ms
 *🖥️ Platform:* ${platform}
-*💾 RAM Usage:* ${ramUsage} MB
+*💾 RAM Usage:* ${ramUsage} GB
 
 _Type *!help* to view all available commands._`;
 
@@ -99,8 +99,8 @@ _Type *!help* to view all available commands._`;
                     forwardingScore: 1,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363238139244263@newsletter',
-                        newsletterName: 'FLASH-MD',
+                        newsletterJid: '120363347365643318@newsletter',
+                        newsletterName: 'IRON-MAN-MD',
                         serverMessageId: -1
                     }
                 }
