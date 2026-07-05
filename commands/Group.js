@@ -1,29 +1,62 @@
+
 import { getOnlineMembers } from '../france/Presence.js';
 import { MESSAGES } from '../france/config.js';
+import { t, translate, translateAIResponse, getUserLang } from '../france/translator.js';
 
 export const commands = [
   {
     name: 'online',
-    aliases: ['listonline', 'active'],
+    aliases: ['listonline', 'active', 'activeusers'],
     description: 'List currently online group members.',
     category: 'Group',
     groupOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
+      
+      const checkingMsg = await t(from, 'online', 'checking');
+      const processingMsg = await sock.sendMessage(from, { text: checkingMsg }, { quoted: msg });
+      
       try {
         const online = await getOnlineMembers(sock, from);
+        
+        await sock.sendMessage(from, { delete: processingMsg.key });
+        
         if (!online.length) {
+          const noMembersMsg = await t(from, 'online', 'noMembers');
+          const poweredMsg = await t(from, 'online', 'powered');
           return sock.sendMessage(from, {
-            text: MESSAGES.group.online.noMembers
+            text: `${noMembersMsg}\n\n${poweredMsg}`
           }, { quoted: msg });
         }
-        const onlineList = online.map((jid, index) => `${index + 1}. 🟢 @${jid.split('@')[0]}`).join('\n');
+        
+        const onlineList = online.map((jid, index) => {
+          const name = jid.split('@')[0];
+          return `${index + 1}. 🟢 ${name}`;
+        }).join('\n');
+        
+        const total = online.length;
+        const metadata = await sock.groupMetadata(from);
+        const totalMembers = metadata.participants.length;
+        const percent = ((total / totalMembers) * 100).toFixed(1);
+        
+        const headerMsg = await t(from, 'online', 'header');
+        const onlineLabel = await t(from, 'online', 'onlineLabel');
+        const poweredMsg = await t(from, 'online', 'powered');
+        
         await sock.sendMessage(from, {
-          text: MESSAGES.group.online.list.replace('{list}', onlineList),
+          text: `${headerMsg}\n\n${onlineLabel} ${total}/${totalMembers} (${percent}%)\n\n${onlineList}\n\n${poweredMsg}`,
           mentions: online
         }, { quoted: msg });
+        
       } catch (err) {
+        await sock.sendMessage(from, { delete: processingMsg.key });
+        const errorMsg = await t(from, 'online', 'error');
+        const poweredMsg = await t(from, 'online', 'powered');
         await sock.sendMessage(from, {
-          text: MESSAGES.group.online.error.replace('{error}', err.message)
+          text: `${errorMsg} ${err.message}\n\n${poweredMsg}`
         }, { quoted: msg });
       }
     }
@@ -34,6 +67,10 @@ export const commands = [
     category: 'Group',
     groupOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         const metadata = await sock.groupMetadata(from);
         const groupName = metadata.subject;
@@ -45,7 +82,8 @@ export const commands = [
         const ownerNumber = ownerJid ? ownerJid.split('@')[0] : 'Unknown';
         const adminList = admins.map((a, i) => `${i + 1}. @${a.id.split('@')[0]}`).join('\n');
         
-        const response = MESSAGES.group.info.result
+        const groupInfoMsg = await t(from, 'info', 'result');
+        const response = groupInfoMsg
           .replace('{groupName}', groupName)
           .replace('{groupId}', groupId)
           .replace('{ownerNumber}', ownerNumber)
@@ -58,7 +96,8 @@ export const commands = [
           mentions: [...(ownerJid ? [ownerJid] : []), ...admins.map(a => a.id)]
         }, { quoted: msg });
       } catch (err) {
-        await sock.sendMessage(from, { text: MESSAGES.group.info.error }, { quoted: msg });
+        const errorMsg = await t(from, 'info', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -71,15 +110,21 @@ export const commands = [
     ownerOnly: true,
     groupOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       const args = text.trim().split(/\s+/);
       const [option, action = 'warn'] = args;
       if (!['on', 'off'].includes(option) || !['warn', 'kick', 'delete'].includes(action)) {
+        const usageMsg = await t(from, 'antilink', 'usage');
         return sock.sendMessage(from, {
-          text: MESSAGES.group.antilink.usage
+          text: usageMsg
         }, { quoted: msg });
       }
+      const successMsg = await t(from, 'antilink', 'success');
       return sock.sendMessage(from, {
-        text: MESSAGES.group.antilink.success.replace('{option}', option.toUpperCase()).replace('{action}', action.toUpperCase())
+        text: successMsg.replace('{option}', option.toUpperCase()).replace('{action}', action.toUpperCase())
       }, { quoted: msg });
     }
   },
@@ -90,10 +135,17 @@ export const commands = [
     category: 'Group',
     groupOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       const metadata = await sock.groupMetadata(from);
       const tagList = metadata.participants.map(p => p.id);
       const quoted = msg.message?.extendedTextMessage?.contextInfo;
       let outMsg;
+      
+      const defaultMsg = await t(from, 'hidetag', 'default');
+      const noMessageMsg = await t(from, 'hidetag', 'noMessage');
       
       if (quoted?.quotedMessage) {
         const quotedMsg = quoted.quotedMessage;
@@ -102,20 +154,20 @@ export const commands = [
           case 'imageMessage':
           case 'videoMessage':
           case 'audioMessage':
-            outMsg = { text: MESSAGES.group.hidetag.default, mentions: tagList };
+            outMsg = { text: defaultMsg, mentions: tagList };
             break;
           case 'conversation':
           case 'extendedTextMessage':
-            const textContent = quotedMsg?.conversation || quotedMsg.extendedTextMessage?.text || MESSAGES.group.hidetag.default;
+            const textContent = quotedMsg?.conversation || quotedMsg.extendedTextMessage?.text || defaultMsg;
             outMsg = { text: textContent, mentions: tagList };
             break;
           default:
-            outMsg = { text: MESSAGES.group.hidetag.default, mentions: tagList };
+            outMsg = { text: defaultMsg, mentions: tagList };
         }
       } else {
         if (!text) {
           return sock.sendMessage(from, {
-            text: MESSAGES.group.hidetag.noMessage
+            text: noMessageMsg
           }, { quoted: msg });
         }
         outMsg = { text: text, mentions: tagList };
@@ -130,14 +182,21 @@ export const commands = [
     category: 'Group',
     groupOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         const groupInfo = await sock.groupMetadata(from);
         const participants = groupInfo.participants;
         if (!participants.length) {
-          return await sock.sendMessage(from, { text: MESSAGES.group.tagall.noParticipants }, { quoted: msg });
+          const noParticipantsMsg = await t(from, 'tagall', 'noParticipants');
+          return await sock.sendMessage(from, { text: noParticipantsMsg }, { quoted: msg });
         }
-        const customText = text || MESSAGES.group.tagall.defaultText;
-        let mentionText = MESSAGES.group.tagall.header.replace('{text}', customText);
+        const defaultTextMsg = await t(from, 'tagall', 'defaultText');
+        const customText = text || defaultTextMsg;
+        const headerMsg = await t(from, 'tagall', 'header');
+        let mentionText = headerMsg.replace('{text}', customText);
         participants.forEach((p, i) => {
           mentionText += `${i + 1}. @${p.id.split('@')[0]}\n`;
         });
@@ -146,8 +205,9 @@ export const commands = [
           mentions: participants.map(p => p.id)
         }, { quoted: msg });
       } catch (error) {
+        const errorMsg = await t(from, 'tagall', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.group.tagall.error
+          text: errorMsg
         }, { quoted: msg });
       }
     }
@@ -162,15 +222,22 @@ export const commands = [
     ownerOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       const newSubject = text;
       if (!newSubject) {
-        return sock.sendMessage(from, { text: MESSAGES.group.rename.noName }, { quoted: msg });
+        const noNameMsg = await t(from, 'rename', 'noName');
+        return sock.sendMessage(from, { text: noNameMsg }, { quoted: msg });
       }
       try {
         await sock.groupUpdateSubject(from, newSubject);
-        await sock.sendMessage(from, { text: MESSAGES.group.rename.success.replace('{name}', newSubject) }, { quoted: msg });
+        const successMsg = await t(from, 'rename', 'success');
+        await sock.sendMessage(from, { text: successMsg.replace('{name}', newSubject) }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.rename.error }, { quoted: msg });
+        const errorMsg = await t(from, 'rename', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -184,20 +251,27 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       const quoted = msg.message?.extendedTextMessage?.contextInfo?.participant;
       const tagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
       const target = quoted || tagged;
       if (!target) {
-        return sock.sendMessage(from, { text: MESSAGES.group.kick.noTarget }, { quoted: msg });
+        const noTargetMsg = await t(from, 'kick', 'noTarget');
+        return sock.sendMessage(from, { text: noTargetMsg }, { quoted: msg });
       }
       try {
         await sock.groupParticipantsUpdate(from, [target], 'remove');
+        const successMsg = await t(from, 'kick', 'success');
         await sock.sendMessage(from, {
-          text: MESSAGES.group.kick.success.replace('{user}', target.split('@')[0]),
+          text: successMsg.replace('{user}', target.split('@')[0]),
           mentions: [target]
         }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.kick.error }, { quoted: msg });
+        const errorMsg = await t(from, 'kick', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -210,18 +284,25 @@ export const commands = [
     groupOnly: true,
     adminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       const args = text.trim().split(/\s+/);
       if (!args[0]) {
-        return sock.sendMessage(from, { text: MESSAGES.group.add.noNumber }, { quoted: msg });
+        const noNumberMsg = await t(from, 'add', 'noNumber');
+        return sock.sendMessage(from, { text: noNumberMsg }, { quoted: msg });
       }
       const num = args[0].replace(/\D/g, '');
       const userJid = `${num}@s.whatsapp.net`;
       try {
         await sock.groupParticipantsUpdate(from, [userJid], 'add');
-        await sock.sendMessage(from, { text: MESSAGES.group.add.success.replace('{number}', num) }, { quoted: msg });
+        const successMsg = await t(from, 'add', 'success');
+        await sock.sendMessage(from, { text: successMsg.replace('{number}', num) }, { quoted: msg });
       } catch {
+        const errorMsg = await t(from, 'add', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.group.add.error
+          text: errorMsg
         }, { quoted: msg });
       }
     }
@@ -235,9 +316,14 @@ export const commands = [
     groupOnly: true,
     adminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       const metadata = await sock.groupMetadata(from);
       const toKick = metadata.participants.filter(p => !p.admin).map(p => p.id);
-      await sock.sendMessage(from, { text: MESSAGES.group.kickall.warning }, { quoted: msg });
+      const warningMsg = await t(from, 'kickall', 'warning');
+      await sock.sendMessage(from, { text: warningMsg }, { quoted: msg });
       await new Promise(res => setTimeout(res, 5000));
       for (const id of toKick) {
         await sock.groupParticipantsUpdate(from, [id], 'remove');
@@ -255,20 +341,27 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       const quoted = msg.message?.extendedTextMessage?.contextInfo?.participant;
       const tagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
       const target = quoted || tagged;
       if (!target) {
-        return sock.sendMessage(from, { text: MESSAGES.group.promote.noTarget }, { quoted: msg });
+        const noTargetMsg = await t(from, 'promote', 'noTarget');
+        return sock.sendMessage(from, { text: noTargetMsg }, { quoted: msg });
       }
       try {
         await sock.groupParticipantsUpdate(from, [target], 'promote');
+        const successMsg = await t(from, 'promote', 'success');
         await sock.sendMessage(from, {
-          text: MESSAGES.group.promote.success.replace('{user}', target.split('@')[0]),
+          text: successMsg.replace('{user}', target.split('@')[0]),
           mentions: [target]
         }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.promote.error }, { quoted: msg });
+        const errorMsg = await t(from, 'promote', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -282,20 +375,27 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       const quoted = msg.message?.extendedTextMessage?.contextInfo?.participant;
       const tagged = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
       const target = quoted || tagged;
       if (!target) {
-        return sock.sendMessage(from, { text: MESSAGES.group.demote.noTarget }, { quoted: msg });
+        const noTargetMsg = await t(from, 'demote', 'noTarget');
+        return sock.sendMessage(from, { text: noTargetMsg }, { quoted: msg });
       }
       try {
         await sock.groupParticipantsUpdate(from, [target], 'demote');
+        const successMsg = await t(from, 'demote', 'success');
         await sock.sendMessage(from, {
-          text: MESSAGES.group.demote.success.replace('{user}', target.split('@')[0]),
+          text: successMsg.replace('{user}', target.split('@')[0]),
           mentions: [target]
         }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.demote.error }, { quoted: msg });
+        const errorMsg = await t(from, 'demote', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -309,17 +409,24 @@ export const commands = [
     ownerOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         const requests = await sock.groupRequestParticipantsList(from);
         if (requests.length === 0) {
-          return sock.sendMessage(from, { text: MESSAGES.group.approve.noRequests }, { quoted: msg });
+          const noRequestsMsg = await t(from, 'approve', 'noRequests');
+          return sock.sendMessage(from, { text: noRequestsMsg }, { quoted: msg });
         }
         for (const p of requests) {
           await sock.groupRequestParticipantsUpdate(from, [p.jid], 'approve');
         }
-        await sock.sendMessage(from, { text: MESSAGES.group.approve.success }, { quoted: msg });
+        const successMsg = await t(from, 'approve', 'success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.approve.error }, { quoted: msg });
+        const errorMsg = await t(from, 'approve', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -332,17 +439,24 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         const requests = await sock.groupRequestParticipantsList(from);
         if (requests.length === 0) {
-          return sock.sendMessage(from, { text: MESSAGES.group.reject.noRequests }, { quoted: msg });
+          const noRequestsMsg = await t(from, 'reject', 'noRequests');
+          return sock.sendMessage(from, { text: noRequestsMsg }, { quoted: msg });
         }
         for (const p of requests) {
           await sock.groupRequestParticipantsUpdate(from, [p.jid], 'reject');
         }
-        await sock.sendMessage(from, { text: MESSAGES.group.reject.success }, { quoted: msg });
+        const successMsg = await t(from, 'reject', 'success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.reject.error }, { quoted: msg });
+        const errorMsg = await t(from, 'reject', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -354,17 +468,24 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         const requests = await sock.groupRequestParticipantsList(from);
         if (!requests.length) {
-          return sock.sendMessage(from, { text: MESSAGES.group.req.noRequests }, { quoted: msg });
+          const noRequestsMsg = await t(from, 'req', 'noRequests');
+          return sock.sendMessage(from, { text: noRequestsMsg }, { quoted: msg });
         }
         const list = requests.map(p => '+' + p.jid.split('@')[0]).join('\n');
+        const listMsg = await t(from, 'req', 'list');
         await sock.sendMessage(from, {
-          text: MESSAGES.group.req.list.replace('{list}', list),
+          text: listMsg.replace('{list}', list),
         }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.req.error }, { quoted: msg });
+        const errorMsg = await t(from, 'req', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -376,11 +497,17 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         await sock.groupToggleEphemeral(from, 86400);
-        await sock.sendMessage(from, { text: MESSAGES.group.disap.success24 }, { quoted: msg });
+        const successMsg = await t(from, 'disap', 'success24');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.disap.error }, { quoted: msg });
+        const errorMsg = await t(from, 'disap', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -392,11 +519,17 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         await sock.groupToggleEphemeral(from, 7 * 24 * 3600);
-        await sock.sendMessage(from, { text: MESSAGES.group.disap.success7 }, { quoted: msg });
+        const successMsg = await t(from, 'disap', 'success7');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.disap.error }, { quoted: msg });
+        const errorMsg = await t(from, 'disap', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -408,11 +541,17 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         await sock.groupToggleEphemeral(from, 90 * 24 * 3600);
-        await sock.sendMessage(from, { text: MESSAGES.group.disap.success90 }, { quoted: msg });
+        const successMsg = await t(from, 'disap', 'success90');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.disap.error }, { quoted: msg });
+        const errorMsg = await t(from, 'disap', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -424,11 +563,17 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         await sock.groupToggleEphemeral(from, 0);
-        await sock.sendMessage(from, { text: MESSAGES.group.disap.off }, { quoted: msg });
+        const offMsg = await t(from, 'disap', 'off');
+        await sock.sendMessage(from, { text: offMsg }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.disap.error }, { quoted: msg });
+        const errorMsg = await t(from, 'disap', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -440,8 +585,13 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
+      const helpMsg = await t(from, 'disap', 'help');
       await sock.sendMessage(from, {
-        text: MESSAGES.group.disap.help
+        text: helpMsg
       }, { quoted: msg });
     }
   },
@@ -454,17 +604,24 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       const newDesc = text;
       if (!newDesc) {
-        return sock.sendMessage(from, { text: MESSAGES.group.desc.noDesc }, { quoted: msg });
+        const noDescMsg = await t(from, 'desc', 'noDesc');
+        return sock.sendMessage(from, { text: noDescMsg }, { quoted: msg });
       }
       try {
         await sock.groupUpdateDescription(from, newDesc);
+        const successMsg = await t(from, 'desc', 'success');
         await sock.sendMessage(from, {
-          text: MESSAGES.group.desc.success.replace('{desc}', newDesc)
+          text: successMsg.replace('{desc}', newDesc)
         }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.desc.error }, { quoted: msg });
+        const errorMsg = await t(from, 'desc', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -478,11 +635,17 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         await sock.groupSettingUpdate(from, 'announcement');
-        await sock.sendMessage(from, { text: MESSAGES.group.lock.success }, { quoted: msg });
+        const successMsg = await t(from, 'lock', 'success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.lock.error }, { quoted: msg });
+        const errorMsg = await t(from, 'lock', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -496,11 +659,17 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         await sock.groupSettingUpdate(from, 'not_announcement');
-        await sock.sendMessage(from, { text: MESSAGES.group.unlock.success }, { quoted: msg });
+        const successMsg = await t(from, 'unlock', 'success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.unlock.error }, { quoted: msg });
+        const errorMsg = await t(from, 'unlock', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -514,13 +683,19 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         const code = await sock.groupInviteCode(from);
+        const successMsg = await t(from, 'invite', 'success');
         await sock.sendMessage(from, {
-          text: MESSAGES.group.invite.success.replace('{code}', code)
+          text: successMsg.replace('{code}', code)
         }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.invite.error }, { quoted: msg });
+        const errorMsg = await t(from, 'invite', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -534,13 +709,19 @@ export const commands = [
     adminOnly: true,
     botAdminOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         const newCode = await sock.groupRevokeInvite(from);
+        const successMsg = await t(from, 'revoke', 'success');
         await sock.sendMessage(from, {
-          text: MESSAGES.group.revoke.success.replace('{code}', newCode)
+          text: successMsg.replace('{code}', newCode)
         }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.revoke.error }, { quoted: msg });
+        const errorMsg = await t(from, 'revoke', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -552,17 +733,21 @@ export const commands = [
     execute: async ({ sock, from, text, msg }) => {
       const message = text;
       if (!message) {
-        return sock.sendMessage(from, { text: MESSAGES.group.broadcast.noMessage }, { quoted: msg });
+        const noMessageMsg = await t(from, 'broadcast', 'noMessage');
+        return sock.sendMessage(from, { text: noMessageMsg }, { quoted: msg });
       }
       try {
         const groups = await sock.groupFetchAllParticipating();
         const groupIds = Object.keys(groups);
-        await sock.sendMessage(from, { text: MESSAGES.group.broadcast.start }, { quoted: msg });
+        const startMsg = await t(from, 'broadcast', 'start');
+        await sock.sendMessage(from, { text: startMsg }, { quoted: msg });
+        const broadcastMsg = await t(from, 'broadcast', 'message');
         for (const groupId of groupIds) {
-          await sock.sendMessage(groupId, { text: MESSAGES.group.broadcast.message.replace('{message}', message) });
+          await sock.sendMessage(groupId, { text: broadcastMsg.replace('{message}', message) });
         }
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.broadcast.error }, { quoted: msg });
+        const errorMsg = await t(from, 'broadcast', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -574,10 +759,15 @@ export const commands = [
     groupOnly: true,
     ownerOnly: true,
     execute: async ({ sock, from, text, msg }) => {
+      if (!from.endsWith('@g.us')) {
+        const groupOnlyMsg = await t(from, 'group', 'groupOnly');
+        return sock.sendMessage(from, { text: groupOnlyMsg }, { quoted: msg });
+      }
       try {
         await sock.groupLeave(from);
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.leave.error }, { quoted: msg });
+        const errorMsg = await t(from, 'leave', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -589,8 +779,9 @@ export const commands = [
     execute: async ({ sock, from, text, msg }) => {
       const args = text.trim().split(/\s+/);
       if (!args.length) {
+        const usageMsg = await t(from, 'create', 'usage');
         return sock.sendMessage(from, {
-          text: MESSAGES.group.create.usage
+          text: usageMsg
         }, { quoted: msg });
       }
       const mentions = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
@@ -600,17 +791,20 @@ export const commands = [
       const participants = [...new Set([...mentions, ...(quotedJid ? [quotedJid] : []), ...phoneNumbers])];
       
       if (!groupName || participants.length === 0) {
+        const usageMsg = await t(from, 'create', 'usage');
         return sock.sendMessage(from, {
-          text: MESSAGES.group.create.usage
+          text: usageMsg
         }, { quoted: msg });
       }
       
       try {
         const group = await sock.groupCreate(groupName, participants);
-        await sock.sendMessage(group.id, { text: MESSAGES.group.create.welcome });
+        const welcomeMsg = await t(from, 'create', 'welcome');
+        await sock.sendMessage(group.id, { text: welcomeMsg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.group.create.error }, { quoted: msg });
+        const errorMsg = await t(from, 'create', 'error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   }
-];
+]; 

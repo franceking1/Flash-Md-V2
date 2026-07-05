@@ -1,16 +1,13 @@
 import { 
   translateText,
-  takeScreenshot,
   getBibleVerse,
   getRandomFact,
   getRandomQuote,
   defineTerm,
-  formatResponse,
   MESSAGES
 } from '../france/index.js';
 
 import axios from 'axios';
-import fetch from 'node-fetch';
 
 export const commands = [
   {
@@ -85,7 +82,7 @@ END:VCARD`;
   },
   {
     name: 'ss',
-    description: 'Takes a screenshot of a website.',
+    description: 'Takes a screenshot of a website using API.',
     category: 'General',
     execute: async ({ sock, from, text, msg, config }) => {
       const botName = config.BOT_NAME || 'Flash-MD';
@@ -99,23 +96,36 @@ END:VCARD`;
         );
       }
 
+      let url = text.trim();
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+
+      const theme = 'light';
+      const device = 'desktop';
+
+      const apiUrl = `https://api.siputzx.my.id/api/tools/ssweb?url=${encodeURIComponent(url)}&theme=${theme}&device=${device}`;
+
       try {
-        const screenshotBuffer = await takeScreenshot(text);
+        const processingMsg = await sock.sendMessage(from, { text: '📸 Taking screenshot...' }, { quoted: msg });
         
-        await sock.sendMessage(
-          from,
-          {
-            image: screenshotBuffer,
-            caption: `*${botName.toUpperCase()} WEB SCREENSHOT*\n${text}\n\n⚡ Powered by ${botName} ${botVersion}`
-          },
-          { quoted: msg }
-        );
-      } catch (e) {
-        await sock.sendMessage(
-          from,
-          { text: MESSAGES.screenshot.error.replace('{botName}', botName).replace('{botVersion}', botVersion) },
-          { quoted: msg }
-        );
+        const response = await axios.get(apiUrl, {
+          responseType: 'arraybuffer',
+          timeout: 30000
+        });
+
+        await sock.sendMessage(from, { delete: processingMsg.key });
+
+        await sock.sendMessage(from, {
+          image: Buffer.from(response.data),
+          caption: `*${botName.toUpperCase()} WEB SCREENSHOT*\n📡 URL: ${url}\n🎨 Theme: ${theme}\n💻 Device: ${device}\n\n⚡ Powered by ${botName} ${botVersion}`
+        }, { quoted: msg });
+
+      } catch (error) {
+        console.error('Screenshot error:', error);
+        await sock.sendMessage(from, { 
+          text: MESSAGES.screenshot.error.replace('{botName}', botName).replace('{botVersion}', botVersion) 
+        }, { quoted: msg });
       }
     }
   },
@@ -238,7 +248,8 @@ END:VCARD`;
     name: 'eval',
     aliases: ['evaluate'],
     description: 'Evaluate JavaScript code.',
-    category: 'General',
+    category: 'Owner',
+    ownerOnly: true,
     execute: async ({ sock, from, text, msg, config }) => {
       const botName = config.BOT_NAME || 'Flash-MD';
       const botVersion = config.BOT_VERSION || '3.0.0';

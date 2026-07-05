@@ -1,4 +1,3 @@
-
 export function normalizeJid(jid) {
   return jid.replace(/@lid$/, '@s.whatsapp.net')
 }

@@ -1,4 +1,3 @@
-
 import fs from 'fs'
 import path from 'path'
 
@@ -23,4 +22,4 @@ export function loadSudoList() {
 export function saveSudoList(set) {
   ensureFile()
   fs.writeFileSync(filePath, JSON.stringify([...set]))
-} 
+}

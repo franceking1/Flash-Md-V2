@@ -1,4 +1,5 @@
 import { googleSearch, getGithubUser, MESSAGES } from '../france/index.js';
+import { t, translate, translateAIResponse, getUserLang } from '../france/translator.js';
 
 export const commands = [
   {
@@ -10,8 +11,9 @@ export const commands = [
       const botName = config.BOT_NAME || 'Flash-MD';
       
       if (!text) {
+        const noQueryMsg = await t(from, 'google', 'noQuery');
         return sock.sendMessage(from, {
-          text: MESSAGES.google.noQuery
+          text: noQueryMsg
         }, { quoted: msg });
       }
       
@@ -19,15 +21,18 @@ export const commands = [
         const results = await googleSearch(text);
         
         if (!results || results.length === 0) {
+          const noResultsMsg = await t(from, 'google', 'noResults');
           return sock.sendMessage(from, {
-            text: MESSAGES.google.noResults
+            text: noResultsMsg
           }, { quoted: msg });
         }
         
-        let resultsText = MESSAGES.google.header.replace('{query}', text);
+        const headerMsg = await t(from, 'google', 'header');
+        let resultsText = headerMsg.replace('{query}', text);
         
+        const itemTemplate = await t(from, 'google', 'item');
         results.slice(0, 5).forEach(item => {
-          resultsText += MESSAGES.google.item
+          resultsText += itemTemplate
             .replace('{title}', item.title)
             .replace('{snippet}', item.snippet)
             .replace('{link}', item.link);
@@ -46,8 +51,9 @@ export const commands = [
           }
         }, { quoted: msg });
       } catch (err) {
+        const errorMsg = await t(from, 'google', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.google.error
+          text: errorMsg
         }, { quoted: msg });
       }
     }
@@ -63,8 +69,9 @@ export const commands = [
       const username = args[0];
       
       if (!username) {
+        const noUsernameMsg = await t(from, 'github', 'noUsername');
         return sock.sendMessage(from, {
-          text: MESSAGES.github.noUsername
+          text: noUsernameMsg
         }, { quoted: msg });
       }
       
@@ -72,14 +79,16 @@ export const commands = [
         const data = await getGithubUser(username);
         
         if (data.message === 'Not Found') {
+          const notFoundMsg = await t(from, 'github', 'notFound');
           return sock.sendMessage(from, {
-            text: MESSAGES.github.notFound
+            text: notFoundMsg
           }, { quoted: msg });
         }
         
         const profilePic = `https://github.com/${data.login}.png`;
         
-        const userInfo = MESSAGES.github.info
+        const infoTemplate = await t(from, 'github', 'info');
+        const userInfo = infoTemplate
           .replace('{name}', data.name || 'N/A')
           .replace('{login}', data.login)
           .replace('{bio}', data.bio || 'N/A')
@@ -105,8 +114,9 @@ export const commands = [
           }
         }, { quoted: msg });
       } catch (err) {
+        const errorMsg = await t(from, 'github', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.github.error
+          text: errorMsg
         }, { quoted: msg });
       }
     }

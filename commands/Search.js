@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Sticker, StickerTypes } from 'wa-sticker-formatter';
 import yts from 'yt-search';
 import { MESSAGES } from '../france/index.js';
+import { t, translate, translateAIResponse, getUserLang } from '../france/translator.js';
 
 const BASE_URL = 'https://noobs-api.top';
 
@@ -14,8 +15,9 @@ export const commands = [
     execute: async ({ sock, from, text, msg, config }) => {
       const botName = config.BOT_NAME || 'Flash-MD';
       if (!text) {
+        const noTextMsg = await t(from, 'attp', 'noText');
         return await sock.sendMessage(from, { 
-          text: MESSAGES.attp.noText 
+          text: noTextMsg 
         }, { quoted: msg });
       }
       
@@ -46,8 +48,9 @@ export const commands = [
           }
         }, { quoted: msg });
       } catch {
+        const errorMsg = await t(from, 'attp', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.attp.error,
+          text: errorMsg,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -69,8 +72,9 @@ export const commands = [
     execute: async ({ sock, from, text, msg, config }) => {
       const botName = config.BOT_NAME || 'Flash-MD';
       if (!text) {
+        const noTextMsg = await t(from, 'stickersearch', 'noText');
         return await sock.sendMessage(from, {
-          text: MESSAGES.stickersearch.noText,
+          text: noTextMsg,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -110,8 +114,9 @@ export const commands = [
           }, { quoted: msg });
         }
       } catch {
+        const errorMsg = await t(from, 'stickersearch', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.stickersearch.error,
+          text: errorMsg,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -133,8 +138,9 @@ export const commands = [
     execute: async ({ sock, from, text, msg, config }) => {
       const botName = config.BOT_NAME || 'Flash-MD';
       if (!text) {
+        const noTextMsg = await t(from, 'weather', 'noText');
         return await sock.sendMessage(from, {
-          text: MESSAGES.weather.noText,
+          text: noTextMsg,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -162,7 +168,8 @@ export const commands = [
         const sunset = new Date(data.sys.sunset * 1000).toLocaleTimeString();
         const rain = data.rain ? data.rain['1h'] : 0;
         
-        const weatherText = MESSAGES.weather.result
+        const resultTemplate = await t(from, 'weather', 'result');
+        const weatherText = resultTemplate
           .replace('{name}', data.name)
           .replace('{country}', data.sys.country)
           .replace('{temp}', data.main.temp)
@@ -193,8 +200,9 @@ export const commands = [
           }
         }, { quoted: msg });
       } catch {
+        const errorMsg = await t(from, 'weather', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.weather.error,
+          text: errorMsg,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -216,8 +224,9 @@ export const commands = [
     execute: async ({ sock, from, text, msg, config }) => {
       const botName = config.BOT_NAME || 'Flash-MD';
       if (!text) {
+        const noTextMsg = await t(from, 'yts', 'noText');
         return await sock.sendMessage(from, {
-          text: MESSAGES.yts.noText,
+          text: noTextMsg,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -233,10 +242,13 @@ export const commands = [
       try {
         const info = await yts(text);
         const videos = info.videos.slice(0, 10);
-        let resultText = MESSAGES.yts.header.replace('{query}', text);
         
+        const headerTemplate = await t(from, 'yts', 'header');
+        let resultText = headerTemplate.replace('{query}', text);
+        
+        const itemTemplate = await t(from, 'yts', 'item');
         for (let i = 0; i < videos.length; i++) {
-          resultText += MESSAGES.yts.item
+          resultText += itemTemplate
             .replace('{num}', i + 1)
             .replace('{title}', videos[i].title)
             .replace('{channel}', videos[i].author.name)
@@ -244,9 +256,10 @@ export const commands = [
             .replace('{url}', videos[i].url);
         }
         
+        const footerTemplate = await t(from, 'yts', 'footer');
         await sock.sendMessage(from, {
           image: { url: videos[0].thumbnail },
-          caption: resultText + MESSAGES.yts.footer.replace('{botName}', botName),
+          caption: resultText + footerTemplate.replace('{botName}', botName),
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -258,8 +271,9 @@ export const commands = [
           }
         }, { quoted: msg });
       } catch {
+        const errorMsg = await t(from, 'yts', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.yts.error,
+          text: errorMsg,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -281,8 +295,9 @@ export const commands = [
     execute: async ({ sock, from, text, msg, config }) => {
       const botName = config.BOT_NAME || 'Flash-MD';
       if (!text) {
+        const noTextMsg = await t(from, 'ytmp3', 'noText');
         return sock.sendMessage(from, {
-          text: MESSAGES.ytmp3.noText
+          text: noTextMsg
         }, { quoted: msg });
       }
       
@@ -290,8 +305,9 @@ export const commands = [
         const search = await yts(text);
         const video = search.videos[0];
         if (!video) {
+          const noResultsMsg = await t(from, 'ytmp3', 'noResults');
           return sock.sendMessage(from, {
-            text: MESSAGES.ytmp3.noResults
+            text: noResultsMsg
           }, { quoted: msg });
         }
         
@@ -302,11 +318,13 @@ export const commands = [
         const data = response.data;
         
         if (!data.downloadLink) {
+          const noLinkMsg = await t(from, 'ytmp3', 'noLink');
           return sock.sendMessage(from, {
-            text: MESSAGES.ytmp3.noLink
+            text: noLinkMsg
           }, { quoted: msg });
         }
         
+        const captionMsg = await t(from, 'ytmp3', 'caption');
         await sock.sendMessage(from, {
           audio: { url: data.downloadLink },
           mimetype: 'audio/mpeg',
@@ -320,12 +338,13 @@ export const commands = [
               serverMessageId: -1
             }
           },
-          caption: MESSAGES.ytmp3.caption
+          caption: captionMsg
         }, { quoted: msg });
       } catch (err) {
         console.error('Ytmp3 error:', err);
+        const errorMsg = await t(from, 'ytmp3', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.ytmp3.error
+          text: errorMsg
         }, { quoted: msg });
       }
     }
@@ -338,8 +357,9 @@ export const commands = [
     execute: async ({ sock, from, text, msg, config }) => {
       const botName = config.BOT_NAME || 'Flash-MD';
       if (!text) {
+        const noTextMsg = await t(from, 'ytmp4', 'noText');
         return sock.sendMessage(from, {
-          text: MESSAGES.ytmp4.noText
+          text: noTextMsg
         }, { quoted: msg });
       }
       
@@ -347,8 +367,9 @@ export const commands = [
         const search = await yts(text);
         const video = search.videos[0];
         if (!video) {
+          const noResultsMsg = await t(from, 'ytmp4', 'noResults');
           return sock.sendMessage(from, {
-            text: MESSAGES.ytmp4.noResults
+            text: noResultsMsg
           }, { quoted: msg });
         }
         
@@ -359,16 +380,18 @@ export const commands = [
         const data = response.data;
         
         if (!data.downloadLink) {
+          const noLinkMsg = await t(from, 'ytmp4', 'noLink');
           return sock.sendMessage(from, {
-            text: MESSAGES.ytmp4.noLink
+            text: noLinkMsg
           }, { quoted: msg });
         }
         
+        const captionMsg = await t(from, 'ytmp4', 'caption');
         await sock.sendMessage(from, {
           video: { url: data.downloadLink },
           mimetype: 'video/mp4',
           fileName,
-          caption: MESSAGES.ytmp4.caption,
+          caption: captionMsg,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -381,8 +404,9 @@ export const commands = [
         }, { quoted: msg });
       } catch (err) {
         console.error('Ytmp4 error:', err);
+        const errorMsg = await t(from, 'ytmp4', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.ytmp4.error
+          text: errorMsg
         }, { quoted: msg });
       }
     }

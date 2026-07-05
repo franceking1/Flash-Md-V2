@@ -296,43 +296,96 @@ export const commands = [
     }
   },
   {
-    name: 'tgs',
-    aliases: ['tg'],
-    description: 'Download and send all stickers from a Telegram pack',
-    category: 'Download',
-    execute: async ({ sock, from, text, msg }) => {
-      if (!text) {
-        return sock.sendMessage(from, {
-          text: MESSAGES.tgs.noUrl
-        });
-      }
-
-      try {
-        const data = await telegramStickerPack(text);
-
-        if (data.stickers && data.stickers.length > 0) {
-          for (const stickerUrl of data.stickers) {
-            await sock.sendMessage(from, {
-              sticker: { url: stickerUrl }
-            });
-          }
-
-          await sock.sendMessage(from, {
-            text: MESSAGES.tgs.complete
-          });
-        } else {
-          await sock.sendMessage(from, {
-            text: MESSAGES.tgs.noStickers
-          });
-        }
-      } catch (err) {
-        console.error('TGS Error:', err);
-        await sock.sendMessage(from, {
-          text: MESSAGES.tgs.error
-        });
-      }
+  name: 'tgs',
+  aliases: ['tg'],
+  description: 'Download and send all stickers from a Telegram pack',
+  category: 'Download',
+  execute: async ({ sock, from, text, msg }) => {
+    if (!text) {
+      return sock.sendMessage(from, {
+        text: MESSAGES.tgs.noUrl
+      });
     }
-  },
+
+    try {
+      await sock.sendMessage(from, {
+        text: '⏳ *Fetching Telegram sticker pack...* Please wait.'
+      });
+
+      const data = await telegramStickerPack(text);
+
+      if (!data.stickers || data.stickers.length === 0) {
+        return sock.sendMessage(from, {
+          text: MESSAGES.tgs.noStickers
+        });
+      }
+
+      const packInfo = `📦 *Telegram Sticker Pack*\n\n📛 *Name:* ${data.name || 'N/A'}\n📝 *Title:* ${data.title || 'N/A'}\n🎬 *Type:* ${data.is_video ? 'Video Stickers' : data.is_animated ? 'Animated Stickers' : 'Static Stickers'}\n📊 *Total Stickers:* ${data.stickers.length}\n\n_Converting to animated stickers..._`;
+      
+      await sock.sendMessage(from, {
+        text: packInfo
+      });
+
+      const ffmpeg = (await import('fluent-ffmpeg')).default;
+      const ffmpegPath = (await import('ffmpeg-static')).default;
+      const { writeFile, unlink } = await import('fs/promises');
+      const { createReadStream } = await import('fs');
+      const { Sticker } = await import('wa-sticker-formatter');
+      
+      ffmpeg.setFfmpegPath(ffmpegPath);
+
+      for (let i = 0; i < Math.min(data.stickers.length, 20); i++) {
+        const stickerUrl = data.stickers[i];
+        try {
+          const response = await axios.get(stickerUrl, { responseType: 'arraybuffer' });
+          const tempWebm = `/tmp/sticker_${Date.now()}_${i}.webm`;
+          const tempWebp = `/tmp/sticker_${Date.now()}_${i}.webp`;
+          
+          await writeFile(tempWebm, Buffer.from(response.data));
+          
+          await new Promise((resolve, reject) => {
+            ffmpeg(tempWebm)
+              .output(tempWebp)
+              .outputOptions([
+                '-vcodec', 'libwebp',
+                '-lossless', '0',
+                '-compression_level', '6',
+                '-q:v', '70',
+                '-loop', '0',
+                '-an',
+                '-vsync', '0',
+                '-vf', 'scale=512:512:force_original_aspect_ratio=increase,crop=512:512'
+              ])
+              .on('end', resolve)
+              .on('error', reject)
+              .run();
+          });
+          
+          const stickerBuffer = await require('fs').promises.readFile(tempWebp);
+          
+          await sock.sendMessage(from, {
+            sticker: stickerBuffer
+          });
+          
+          await unlink(tempWebm).catch(() => {});
+          await unlink(tempWebp).catch(() => {});
+          
+        } catch (err) {
+          console.error('Failed to convert sticker:', err.message);
+        }
+      }
+
+      await sock.sendMessage(from, {
+        text: `✅ Sent ${Math.min(data.stickers.length, 20)} animated stickers from pack!`
+      });
+    } catch (err) {
+      console.error('TGS Error:', err);
+      await sock.sendMessage(from, {
+        text: MESSAGES.tgs.error
+      });
+    }
+  }
+}, 
   {
     name: 'fb',
     aliases: ['fbdl', 'facebook', 'fb1'],
@@ -456,52 +509,51 @@ export const commands = [
       }
     }
   },
-  {
-    name: 'mediafire',
-    aliases: ['mf', 'mfdl'],
-    description: 'Download files from MediaFire',
-    category: 'Download',
-    execute: async ({ sock, from, text, msg }) => {
-      if (!text) {
-        return sock.sendMessage(from, {
-          text: MESSAGES.mediafire.noUrl
-        });
-      }
-
-      try {
-        await sock.sendMessage(from, {
-          text: MESSAGES.mediafire.fetching
-        });
-
-        const data = await mediafireDownload(text);
-
-        if (!data.status || !data.BK9 || !data.BK9.link) {
-          return sock.sendMessage(from, {
-            text: MESSAGES.mediafire.error
-          });
-        }
-
-        const file = data.BK9;
-        const caption = MESSAGES.mediafire.caption
-          .replace('{name}', file.name)
-          .replace('{size}', file.size)
-          .replace('{type}', file.filetype)
-          .replace('{uploaded}', file.uploaded);
-
-        await sock.sendMessage(from, {
-          document: { url: file.link },
-          fileName: file.name,
-          mimetype: `application/${file.mime.toLowerCase()}`,
-          caption
-        });
-      } catch (err) {
-        console.error('MediaFire Error:', err);
-        await sock.sendMessage(from, {
-          text: 'An error occurred while processing the request. Please try again later.'
-        });
-      }
+{
+  name: 'mediafire',
+  aliases: ['mf', 'mfdl'],
+  description: 'Download files from MediaFire',
+  category: 'Download',
+  execute: async ({ sock, from, text, msg }) => {
+    if (!text) {
+      return sock.sendMessage(from, {
+        text: MESSAGES.mediafire.noUrl
+      });
     }
-  },
+
+    try {
+      await sock.sendMessage(from, {
+        text: MESSAGES.mediafire.fetching
+      });
+
+      const data = await mediafireDownload(text);
+
+      if (!data.download) {
+        return sock.sendMessage(from, {
+          text: MESSAGES.mediafire.error
+        });
+      }
+
+      const caption = MESSAGES.mediafire.caption
+        .replace('{name}', data.filename)
+        .replace('{size}', data.size)
+        .replace('{type}', data.mimetype || 'APK')
+        .replace('{uploaded}', 'N/A');
+
+      await sock.sendMessage(from, {
+        document: { url: data.download },
+        fileName: data.filename,
+        mimetype: data.mimetype || 'application/octet-stream',
+        caption
+      });
+    } catch (err) {
+      console.error('MediaFire Error:', err);
+      await sock.sendMessage(from, {
+        text: 'An error occurred while processing the request. Please try again later.'
+      });
+    }
+  }
+}, 
   {
     name: 'apk',
     aliases: ['app', 'application'],

@@ -19,6 +19,11 @@ function parseLids(lidStr) {
   return lidStr.split(',').map(l => l.trim()).filter(Boolean)
 }
 
+function parseMenuImages(menuImagesStr) {
+  if (!menuImagesStr || menuImagesStr.trim() === '') return []
+  return menuImagesStr.split(',').map(img => img.trim()).filter(Boolean)
+}
+
 const CONFIG = {
   MODE: process.env.MODE || 'private',
   PREFIXES: parsePrefixes(process.env.PREFIXES),
@@ -34,10 +39,11 @@ const CONFIG = {
   DM_PRESENCE: process.env.DM_PRESENCE || '',
   GRP_PRESENCE: process.env.GRP_PRESENCE || '',
   USER_LID: parseLids(process.env.USER_LID || ''),
-  OWNER_NUMBER: process.env.OWNER_NUMBER || '254742063632',
-  OWNER_NAME: process.env.OWNER_NAME || 'FLASH-MD Owner',
+  OWNER_NUMBER: process.env.OWNER_NUMBER || '',
+  OWNER_NAME: process.env.OWNER_NAME || 'Flash MD user',
   BOT_NAME: process.env.BOT_NAME || 'Flash-Md-V3',
-  BOT_VERSION: process.env.BOT_VERSION || '3.0.0'
+  BOT_VERSION: process.env.BOT_VERSION || '3.0.0',
+  MENU_IMAGES: parseMenuImages(process.env.MENU_IMAGES || '')
 }
 
 export default CONFIG

@@ -3,6 +3,7 @@ import CONFIG from '../config.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { t, translate, translateAIResponse, getUserLang } from '../france/translator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,13 +25,15 @@ export const commands = [
       const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       
       if (!quoted) {
-        return sock.sendMessage(from, { text: '❌ Please reply to a message you want to save.' }, { quoted: msg });
+        const noReplyMsg = await t(from, 'save', 'noReply');
+        return sock.sendMessage(from, { text: noReplyMsg }, { quoted: msg });
       }
       
       const BOT_OWNER_ID = getOwnerJid();
       
       if (!BOT_OWNER_ID) {
-        return sock.sendMessage(from, { text: '❌ Owner number not configured in config.js' }, { quoted: msg });
+        const noOwnerMsg = await t(from, 'save', 'noOwner');
+        return sock.sendMessage(from, { text: noOwnerMsg }, { quoted: msg });
       }
       
       try {
@@ -38,16 +41,18 @@ export const commands = [
         
         if (quoted.imageMessage) {
           const buffer = await downloadMediaMessage(quotedMsg, 'buffer', {}, { logger: console });
+          const imageCaption = await t(from, 'save', 'image');
           await sock.sendMessage(BOT_OWNER_ID, { 
             image: buffer, 
-            caption: quoted.imageMessage?.caption || '📸 Saved image' 
+            caption: quoted.imageMessage?.caption || imageCaption
           });
         } 
         else if (quoted.videoMessage) {
           const buffer = await downloadMediaMessage(quotedMsg, 'buffer', {}, { logger: console });
+          const videoCaption = await t(from, 'save', 'video');
           await sock.sendMessage(BOT_OWNER_ID, { 
             video: buffer, 
-            caption: quoted.videoMessage?.caption || '🎥 Saved video' 
+            caption: quoted.videoMessage?.caption || videoCaption
           });
         } 
         else if (quoted.audioMessage) {
@@ -75,12 +80,17 @@ export const commands = [
           await sock.sendMessage(BOT_OWNER_ID, { text: textContent });
         } 
         else {
-          return sock.sendMessage(from, { text: '❌ Unsupported message type. Please reply to an image, video, audio, sticker, document, or text message.' }, { quoted: msg });
+          const unsupportedMsg = await t(from, 'save', 'unsupported');
+          return sock.sendMessage(from, { text: unsupportedMsg }, { quoted: msg });
         }
+        
+        const successMsg = await t(from, 'save', 'success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
         
       } catch (err) {
         console.error('Save command error:', err);
-        await sock.sendMessage(from, { text: `❌ Failed to save message: ${err.message}` }, { quoted: msg });
+        const errorMsg = await t(from, 'save', 'error');
+        await sock.sendMessage(from, { text: `${errorMsg} ${err.message}` }, { quoted: msg });
       }
     }
   }

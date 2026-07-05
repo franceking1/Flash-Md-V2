@@ -1,4 +1,5 @@
 import { npmSearch, formatDate, MESSAGES } from '../france/index.js';
+import { t, translate, translateAIResponse, getUserLang } from '../france/translator.js';
 
 export const commands = [
   {
@@ -11,8 +12,9 @@ export const commands = [
       const botVersion = config.BOT_VERSION || '3.0.0';
       
       if (!text) {
+        const noQueryMsg = await t(from, 'npm', 'noQuery');
         return sock.sendMessage(from, { 
-          text: MESSAGES.npm.noQuery 
+          text: noQueryMsg
         }, { quoted: msg });
       }
       
@@ -20,18 +22,23 @@ export const commands = [
         const data = await npmSearch(text);
         
         if (!data.results?.length) {
+          const notFoundMsg = await t(from, 'npm', 'notFound');
           return sock.sendMessage(from, { 
-            text: MESSAGES.npm.notFound.replace('{query}', text) 
+            text: notFoundMsg.replace('{query}', text) 
           }, { quoted: msg });
         }
         
         const pkg = data.results[0];
         const formattedDate = formatDate(pkg.date);
+        const userLang = getUserLang(from);
         
-        const result = MESSAGES.npm.result
+        const translatedDescription = pkg.description ? await translate(pkg.description, userLang) : 'N/A';
+        
+        const resultTemplate = await t(from, 'npm', 'result');
+        const result = resultTemplate
           .replace('{name}', pkg.name)
           .replace('{version}', pkg.version)
-          .replace('{description}', pkg.description || 'N/A')
+          .replace('{description}', translatedDescription)
           .replace('{publisher}', pkg.publisher.username)
           .replace('{license}', pkg.license || 'N/A')
           .replace('{date}', formattedDate)
@@ -54,8 +61,9 @@ export const commands = [
           }
         }, { quoted: msg });
       } catch (error) {
+        const errorMsg = await t(from, 'npm', 'error');
         await sock.sendMessage(from, { 
-          text: MESSAGES.npm.error 
+          text: errorMsg
         }, { quoted: msg });
       }
     }

@@ -1,9 +1,10 @@
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
 import fs from 'fs-extra';
 import path from 'path';
-import * as Jimp from 'jimp';
+import { Jimp } from 'jimp';
 import { MESSAGES } from '../france/index.js';
 import CONFIG from '../config.js';
+import { t, translate, translateAIResponse, getUserLang } from '../france/translator.js';
 
 const S_WHATSAPP_NET = 's.whatsapp.net';
 
@@ -24,10 +25,10 @@ async function getBuffer(message, type) {
 
 const resizeImage = async (imagePath) => {
   const image = await Jimp.read(imagePath);
-  const resized = image.crop(0, 0, image.getWidth(), image.getHeight()).scaleToFit(720, 720);
+  const resized = image.crop({ x: 0, y: 0, w: image.bitmap.width, h: image.bitmap.height }).scaleToFit({ w: 720, h: 720 });
   return {
-    img: await resized.getBufferAsync(Jimp.MIME_JPEG),
-    preview: await resized.normalize().getBufferAsync(Jimp.MIME_JPEG)
+    img: await resized.getBuffer('image/jpeg'),
+    preview: await resized.normalize().getBuffer('image/jpeg')
   };
 };
 
@@ -62,19 +63,30 @@ export const commands = [
       const quotedImage = quoted?.imageMessage;
       
       if (!quotedImage) {
+        const noImageMsg = await t(from, 'whatsapp', 'fullpp.noImage');
         return sock.sendMessage(from, {
-          text: MESSAGES.whatsapp.fullpp.noImage
+          text: noImageMsg
         }, { quoted: msg });
       }
       
       try {
+        console.log("=== FULLPP DEBUG START ===");
+        console.log("1. Got quoted image message");
+        
         const buffer = await getBuffer(quotedImage, "image");
+        console.log("2. Buffer created, size:", buffer.length, "bytes");
+        
         const mediaPath = path.join(process.cwd(), "temp", `${Date.now()}.jpg`);
         await fs.ensureDir(path.dirname(mediaPath));
         await fs.writeFile(mediaPath, buffer);
-        const resized = await resizeImage(mediaPath);
+        console.log("3. File saved to:", mediaPath);
         
-        await sock.query({
+        const resized = await resizeImage(mediaPath);
+        console.log("4. Image resized, output size:", resized.img.length, "bytes");
+        
+        console.log("5. About to send query to:", S_WHATSAPP_NET);
+        
+        const result = await sock.query({
           tag: "iq",
           attrs: {
             to: S_WHATSAPP_NET,
@@ -88,15 +100,42 @@ export const commands = [
           }]
         });
         
+        console.log("7. Query successful, response:", result);
+        
+        const successMsg = await t(from, 'whatsapp', 'fullpp.success');
         await sock.sendMessage(from, {
-          text: MESSAGES.whatsapp.fullpp.success
+          text: successMsg
         }, { quoted: msg });
         await fs.unlink(mediaPath);
+        console.log("=== FULLPP DEBUG END (SUCCESS) ===");
       } catch (err) {
-        console.error("Fullpp error:", err);
+        console.error("=== FULLPP ERROR ===");
+        console.error("Error message:", err.message);
+        console.error("Error stack:", err.stack);
+        console.error("Error object:", JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+        
+        if (err.response) {
+          console.error("Error response:", err.response);
+          if (err.response.content) {
+            console.error("Error content:", err.response.content);
+          }
+        }
+        
+        if (err.code) {
+          console.error("Error code:", err.code);
+        }
+        
+        const errorMsg = await t(from, 'whatsapp', 'fullpp.error');
         await sock.sendMessage(from, {
-          text: MESSAGES.whatsapp.fullpp.error
+          text: errorMsg
         }, { quoted: msg });
+        
+        const ownerJid = getOwnerJid();
+        if (ownerJid) {
+          await sock.sendMessage(ownerJid, {
+            text: `Fullpp error in ${from}:\n${err.message}\n\nStack: ${err.stack?.slice(0, 200)}`
+          });
+        }
       }
     }
   },
@@ -112,7 +151,8 @@ export const commands = [
         const name = sock.user?.name || "User";
         const avatar = await sock.profilePictureUrl(sock.user.id, 'image').catch(() => 'https://telegra.ph/file/b34645ca1e3a34f1b3978.jpg');
         
-        const caption = MESSAGES.whatsapp.privacy.info
+        const infoTemplate = await t(from, 'whatsapp', 'privacy.info');
+        const caption = infoTemplate
           .replace('{name}', name)
           .replace('{online}', privacySettings.online || 'N/A')
           .replace('{profile}', privacySettings.profile || 'N/A')
@@ -127,7 +167,8 @@ export const commands = [
           caption: caption
         }, { quoted: msg });
       } catch (err) {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.privacy.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'privacy.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -139,10 +180,12 @@ export const commands = [
     execute: async ({ sock, from, text, msg }) => {
       try {
         await sock.chatModify({ pin: true }, from);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.pin.success }, { quoted: msg });
+        const successMsg = await t(from, 'whatsapp', 'pin.success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch (err) {
         console.error('Pin error:', err);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.pin.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'pin.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -154,10 +197,12 @@ export const commands = [
     execute: async ({ sock, from, text, msg }) => {
       try {
         await sock.chatModify({ pin: false }, from);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.unpin.success }, { quoted: msg });
+        const successMsg = await t(from, 'whatsapp', 'unpin.success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch (err) {
         console.error('Unpin error:', err);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.unpin.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'unpin.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -171,7 +216,8 @@ export const commands = [
       const fromMe = msg.message?.extendedTextMessage?.contextInfo?.participant === sock.user.id;
       
       if (!quoted) {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.star.noReply }, { quoted: msg });
+        const noReplyMsg = await t(from, 'whatsapp', 'star.noReply');
+        await sock.sendMessage(from, { text: noReplyMsg }, { quoted: msg });
         return;
       }
       
@@ -182,10 +228,12 @@ export const commands = [
             star: true
           }
         }, from);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.star.success }, { quoted: msg });
+        const successMsg = await t(from, 'whatsapp', 'star.success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch (err) {
         console.error('Star error:', err);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.star.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'star.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -199,7 +247,8 @@ export const commands = [
       const fromMe = msg.message?.extendedTextMessage?.contextInfo?.participant === sock.user.id;
       
       if (!quoted) {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.unstar.noReply }, { quoted: msg });
+        const noReplyMsg = await t(from, 'whatsapp', 'unstar.noReply');
+        await sock.sendMessage(from, { text: noReplyMsg }, { quoted: msg });
         return;
       }
       
@@ -210,10 +259,12 @@ export const commands = [
             star: false
           }
         }, from);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.unstar.success }, { quoted: msg });
+        const successMsg = await t(from, 'whatsapp', 'unstar.success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch (err) {
         console.error('Unstar error:', err);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.unstar.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'unstar.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -225,23 +276,27 @@ export const commands = [
     ownerOnly: true,
     execute: async ({ sock, from, text, msg }) => {
       const options = {
-        all: MESSAGES.whatsapp.mydp.options.all,
-        contacts: MESSAGES.whatsapp.mydp.options.contacts,
-        contact_blacklist: MESSAGES.whatsapp.mydp.options.contact_blacklist,
-        none: MESSAGES.whatsapp.mydp.options.none
+        all: await t(from, 'whatsapp', 'mydp.options.all'),
+        contacts: await t(from, 'whatsapp', 'mydp.options.contacts'),
+        contact_blacklist: await t(from, 'whatsapp', 'mydp.options.contact_blacklist'),
+        none: await t(from, 'whatsapp', 'mydp.options.none')
       };
       
       const choice = text.toLowerCase();
       if (!choice || !options[choice]) {
-        const help = MESSAGES.whatsapp.mydp.help.replace('{options}', Object.entries(options).map(([k, v]) => `- *${k}*: ${v}`).join('\n'));
+        const helpTemplate = await t(from, 'whatsapp', 'mydp.help');
+        const optionsList = Object.entries(options).map(([k, v]) => `- *${k}*: ${v}`).join('\n');
+        const help = helpTemplate.replace('{options}', optionsList);
         return sock.sendMessage(from, { text: help }, { quoted: msg });
       }
       
       try {
         await sock.updateProfilePicturePrivacy(choice);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.mydp.success.replace('{choice}', choice) }, { quoted: msg });
+        const successMsg = await t(from, 'whatsapp', 'mydp.success');
+        await sock.sendMessage(from, { text: successMsg.replace('{choice}', choice) }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.mydp.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'mydp.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -253,23 +308,27 @@ export const commands = [
     ownerOnly: true,
     execute: async ({ sock, from, text, msg }) => {
       const options = {
-        all: MESSAGES.whatsapp.mystatus.options.all,
-        contacts: MESSAGES.whatsapp.mystatus.options.contacts,
-        contact_blacklist: MESSAGES.whatsapp.mystatus.options.contact_blacklist,
-        none: MESSAGES.whatsapp.mystatus.options.none
+        all: await t(from, 'whatsapp', 'mystatus.options.all'),
+        contacts: await t(from, 'whatsapp', 'mystatus.options.contacts'),
+        contact_blacklist: await t(from, 'whatsapp', 'mystatus.options.contact_blacklist'),
+        none: await t(from, 'whatsapp', 'mystatus.options.none')
       };
       
       const choice = text.toLowerCase();
       if (!choice || !options[choice]) {
-        const help = MESSAGES.whatsapp.mystatus.help.replace('{options}', Object.entries(options).map(([k, v]) => `- *${k}*: ${v}`).join('\n'));
+        const helpTemplate = await t(from, 'whatsapp', 'mystatus.help');
+        const optionsList = Object.entries(options).map(([k, v]) => `- *${k}*: ${v}`).join('\n');
+        const help = helpTemplate.replace('{options}', optionsList);
         return sock.sendMessage(from, { text: help }, { quoted: msg });
       }
       
       try {
         await sock.updateStatusPrivacy(choice);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.mystatus.success.replace('{choice}', choice) }, { quoted: msg });
+        const successMsg = await t(from, 'whatsapp', 'mystatus.success');
+        await sock.sendMessage(from, { text: successMsg.replace('{choice}', choice) }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.mystatus.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'mystatus.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -281,23 +340,27 @@ export const commands = [
     ownerOnly: true,
     execute: async ({ sock, from, text, msg }) => {
       const options = {
-        all: MESSAGES.whatsapp.groupadd.options.all,
-        contacts: MESSAGES.whatsapp.groupadd.options.contacts,
-        contact_blacklist: MESSAGES.whatsapp.groupadd.options.contact_blacklist,
-        none: MESSAGES.whatsapp.groupadd.options.none
+        all: await t(from, 'whatsapp', 'groupadd.options.all'),
+        contacts: await t(from, 'whatsapp', 'groupadd.options.contacts'),
+        contact_blacklist: await t(from, 'whatsapp', 'groupadd.options.contact_blacklist'),
+        none: await t(from, 'whatsapp', 'groupadd.options.none')
       };
       
       const choice = text.toLowerCase();
       if (!choice || !options[choice]) {
-        const help = MESSAGES.whatsapp.groupadd.help.replace('{options}', Object.entries(options).map(([k, v]) => `- *${k}*: ${v}`).join('\n'));
+        const helpTemplate = await t(from, 'whatsapp', 'groupadd.help');
+        const optionsList = Object.entries(options).map(([k, v]) => `- *${k}*: ${v}`).join('\n');
+        const help = helpTemplate.replace('{options}', optionsList);
         return sock.sendMessage(from, { text: help }, { quoted: msg });
       }
       
       try {
         await sock.updateGroupsAddPrivacy(choice);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.groupadd.success.replace('{choice}', choice) }, { quoted: msg });
+        const successMsg = await t(from, 'whatsapp', 'groupadd.success');
+        await sock.sendMessage(from, { text: successMsg.replace('{choice}', choice) }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.groupadd.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'groupadd.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -309,31 +372,35 @@ export const commands = [
     ownerOnly: true,
     execute: async ({ sock, from, text, msg }) => {
       const availablePrivacies = {
-        all: MESSAGES.whatsapp.lastseen.options.all,
-        contacts: MESSAGES.whatsapp.lastseen.options.contacts,
-        contact_blacklist: MESSAGES.whatsapp.lastseen.options.contact_blacklist,
-        none: MESSAGES.whatsapp.lastseen.options.none
+        all: await t(from, 'whatsapp', 'lastseen.options.all'),
+        contacts: await t(from, 'whatsapp', 'lastseen.options.contacts'),
+        contact_blacklist: await t(from, 'whatsapp', 'lastseen.options.contact_blacklist'),
+        none: await t(from, 'whatsapp', 'lastseen.options.none')
       };
       
       const priv = text.toLowerCase();
       if (!priv || !availablePrivacies[priv]) {
-        let helpText = MESSAGES.whatsapp.lastseen.help;
+        const helpTemplate = await t(from, 'whatsapp', 'lastseen.help');
+        let helpText = helpTemplate;
         for (const [key, desc] of Object.entries(availablePrivacies)) {
           helpText += `- *${key}*: ${desc}\n`;
         }
-        helpText += MESSAGES.whatsapp.lastseen.example;
+        const exampleMsg = await t(from, 'whatsapp', 'lastseen.example');
+        helpText += exampleMsg;
         return await sock.sendMessage(from, { text: helpText }, { quoted: msg });
       }
       
       try {
         await sock.updateLastSeenPrivacy(priv);
+        const successMsg = await t(from, 'whatsapp', 'lastseen.success');
         await sock.sendMessage(from, {
-          text: MESSAGES.whatsapp.lastseen.success.replace('{priv}', priv).replace('{desc}', availablePrivacies[priv])
+          text: successMsg.replace('{priv}', priv).replace('{desc}', availablePrivacies[priv])
         }, { quoted: msg });
       } catch (error) {
         console.error('Failed to update last seen:', error);
+        const errorMsg = await t(from, 'whatsapp', 'lastseen.error');
         await sock.sendMessage(from, {
-          text: MESSAGES.whatsapp.lastseen.error
+          text: errorMsg
         }, { quoted: msg });
       }
     }
@@ -346,21 +413,25 @@ export const commands = [
     ownerOnly: true,
     execute: async ({ sock, from, text, msg }) => {
       const options = {
-        all: MESSAGES.whatsapp.myonline.options.all,
-        match_last_seen: MESSAGES.whatsapp.myonline.options.match_last_seen
+        all: await t(from, 'whatsapp', 'myonline.options.all'),
+        match_last_seen: await t(from, 'whatsapp', 'myonline.options.match_last_seen')
       };
       
       const choice = text.toLowerCase();
       if (!choice || !options[choice]) {
-        const help = MESSAGES.whatsapp.myonline.help.replace('{options}', Object.entries(options).map(([k, v]) => `- *${k}*: ${v}`).join('\n'));
+        const helpTemplate = await t(from, 'whatsapp', 'myonline.help');
+        const optionsList = Object.entries(options).map(([k, v]) => `- *${k}*: ${v}`).join('\n');
+        const help = helpTemplate.replace('{options}', optionsList);
         return sock.sendMessage(from, { text: help }, { quoted: msg });
       }
       
       try {
         await sock.updateOnlinePrivacy(choice);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.myonline.success.replace('{choice}', choice) }, { quoted: msg });
+        const successMsg = await t(from, 'whatsapp', 'myonline.success');
+        await sock.sendMessage(from, { text: successMsg.replace('{choice}', choice) }, { quoted: msg });
       } catch (err) {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.myonline.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'myonline.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -371,20 +442,27 @@ export const commands = [
     category: 'WhatsApp',
     execute: async ({ sock, from, text, msg }) => {
       const rawNumber = text.trim().split(/\s+/)[0];
-      if (!rawNumber) return await sock.sendMessage(from, { text: MESSAGES.whatsapp.onwa.noNumber }, { quoted: msg });
+      if (!rawNumber) {
+        const noNumberMsg = await t(from, 'whatsapp', 'onwa.noNumber');
+        return await sock.sendMessage(from, { text: noNumberMsg }, { quoted: msg });
+      }
       
       const number = rawNumber.replace(/[^\d]/g, '');
       if (number.length < 10) {
-        return await sock.sendMessage(from, { text: MESSAGES.whatsapp.onwa.invalid }, { quoted: msg });
+        const invalidMsg = await t(from, 'whatsapp', 'onwa.invalid');
+        return await sock.sendMessage(from, { text: invalidMsg }, { quoted: msg });
       }
       
       const waJid = `${number}@s.whatsapp.net`;
       try {
         const [result] = await sock.onWhatsApp(waJid);
-        const response = result?.exists ? MESSAGES.whatsapp.onwa.exists.replace('{number}', rawNumber) : MESSAGES.whatsapp.onwa.notExists.replace('{number}', rawNumber);
+        const existsMsg = await t(from, 'whatsapp', 'onwa.exists');
+        const notExistsMsg = await t(from, 'whatsapp', 'onwa.notExists');
+        const response = result?.exists ? existsMsg.replace('{number}', rawNumber) : notExistsMsg.replace('{number}', rawNumber);
         await sock.sendMessage(from, { text: response }, { quoted: msg });
       } catch (error) {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.onwa.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'onwa.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
         console.error('checkIdCommand error:', error);
       }
     }
@@ -398,12 +476,14 @@ export const commands = [
       const targetJid = text ? `${text.replace(/[^0-9]/g, '')}@s.whatsapp.net` : from;
       try {
         const profile = await sock.getBusinessProfile(targetJid);
-        const textMsg = MESSAGES.whatsapp.bizprofile.result
+        const resultTemplate = await t(from, 'whatsapp', 'bizprofile.result');
+        const textMsg = resultTemplate
           .replace('{description}', profile.description || 'N/A')
           .replace('{category}', profile.category || 'N/A');
         await sock.sendMessage(from, { text: textMsg }, { quoted: msg });
       } catch {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.bizprofile.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'bizprofile.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -416,9 +496,11 @@ export const commands = [
     execute: async ({ sock, from, text, msg }) => {
       try {
         await sock.removeProfilePicture(from);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.removedp.success }, { quoted: msg });
+        const successMsg = await t(from, 'whatsapp', 'removedp.success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch (err) {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.removedp.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'removedp.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -432,10 +514,12 @@ export const commands = [
       try {
         const lastMsgInChat = msg;
         await sock.chatModify({ archive: true, lastMessages: [lastMsgInChat] }, from);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.archive.success }, { quoted: msg });
+        const successMsg = await t(from, 'whatsapp', 'archive.success');
+        await sock.sendMessage(from, { text: successMsg }, { quoted: msg });
       } catch (error) {
         console.error('Error archiving chat:', error);
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.archive.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'archive.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -453,17 +537,18 @@ export const commands = [
       
       try {
         let sendMsg;
+        const captionMsg = await t(from, 'whatsapp', 'vv.caption');
         if (quoted.imageMessage) {
           const buffer = await getBuffer(quoted.imageMessage, 'image');
           sendMsg = {
             image: buffer,
-            caption: MESSAGES.whatsapp.vv.caption
+            caption: captionMsg
           };
         } else if (quoted.videoMessage) {
           const buffer = await getBuffer(quoted.videoMessage, 'video');
           sendMsg = {
             video: buffer,
-            caption: MESSAGES.whatsapp.vv.caption
+            caption: captionMsg
           };
         } else if (quoted.audioMessage) {
           const buffer = await getBuffer(quoted.audioMessage, 'audio');
@@ -482,7 +567,7 @@ export const commands = [
   },
   {
     name: 'vv2',
-    aliases: ["😲","❤️","👍"],
+    aliases: ["😂","❤️","👍"],
     description: 'Sends the view once media to the bot owner.',
     category: 'User',
     execute: async ({ sock, from, text, msg }) => {
@@ -502,17 +587,18 @@ export const commands = [
       
       try {
         let sendMsg;
+        const captionMsg = await t(from, 'whatsapp', 'vv.caption');
         if (quoted.imageMessage) {
           const buffer = await getBuffer(quoted.imageMessage, 'image');
           sendMsg = {
             image: buffer,
-            caption: MESSAGES.whatsapp.vv.caption
+            caption: captionMsg
           };
         } else if (quoted.videoMessage) {
           const buffer = await getBuffer(quoted.videoMessage, 'video');
           sendMsg = {
             video: buffer,
-            caption: MESSAGES.whatsapp.vv.caption
+            caption: captionMsg
           };
         } else if (quoted.audioMessage) {
           const buffer = await getBuffer(quoted.audioMessage, 'audio');
@@ -539,19 +625,22 @@ export const commands = [
       const quoted = context?.quotedMessage;
       
       if (!quoted) {
-        return sock.sendMessage(from, { text: MESSAGES.whatsapp.details.noReply }, { quoted: msg });
+        const noReplyMsg = await t(from, 'whatsapp', 'details.noReply');
+        return sock.sendMessage(from, { text: noReplyMsg }, { quoted: msg });
       }
       
       try {
         const json = JSON.stringify(quoted, null, 2);
         const parts = json.match(/[\s\S]{1,3500}/g) || [];
+        const resultTemplate = await t(from, 'whatsapp', 'details.result');
         for (const part of parts) {
           await sock.sendMessage(from, {
-            text: MESSAGES.whatsapp.details.result.replace('{part}', part)
+            text: resultTemplate.replace('{part}', part)
           }, { quoted: msg });
         }
       } catch (error) {
-        await sock.sendMessage(from, { text: MESSAGES.whatsapp.details.error }, { quoted: msg });
+        const errorMsg = await t(from, 'whatsapp', 'details.error');
+        await sock.sendMessage(from, { text: errorMsg }, { quoted: msg });
       }
     }
   },
@@ -565,16 +654,19 @@ export const commands = [
       try {
         const blockedJids = await sock.fetchBlocklist();
         if (!blockedJids || blockedJids.length === 0) {
-          return await sock.sendMessage(from, { text: MESSAGES.whatsapp.blocklist.empty }, { quoted: msg });
+          const emptyMsg = await t(from, 'whatsapp', 'blocklist.empty');
+          return await sock.sendMessage(from, { text: emptyMsg }, { quoted: msg });
         }
         const formattedList = blockedJids.map((b, i) => `${i + 1}. ${b.replace('@s.whatsapp.net', '')}`).join('\n');
+        const resultTemplate = await t(from, 'whatsapp', 'blocklist.result');
         await sock.sendMessage(from, {
-          text: MESSAGES.whatsapp.blocklist.result.replace('{list}', formattedList)
+          text: resultTemplate.replace('{list}', formattedList)
         }, { quoted: msg });
       } catch (error) {
         console.error('Error fetching block list:', error);
+        const errorMsg = await t(from, 'whatsapp', 'blocklist.error');
         await sock.sendMessage(from, {
-          text: MESSAGES.whatsapp.blocklist.error
+          text: errorMsg
         }, { quoted: msg });
       }
     }
@@ -589,11 +681,13 @@ export const commands = [
       const quotedSender = quotedContext?.participant || quotedContext?.remoteJid;
       
       if (!quotedSender) {
-        return await sock.sendMessage(from, { text: MESSAGES.whatsapp.vcard.noReply }, { quoted: msg });
+        const noReplyMsg = await t(from, 'whatsapp', 'vcard.noReply');
+        return await sock.sendMessage(from, { text: noReplyMsg }, { quoted: msg });
       }
       
       if (!text) {
-        return await sock.sendMessage(from, { text: MESSAGES.whatsapp.vcard.noName }, { quoted: msg });
+        const noNameMsg = await t(from, 'whatsapp', 'vcard.noName');
+        return await sock.sendMessage(from, { text: noNameMsg }, { quoted: msg });
       }
       
       const name = text;
@@ -622,14 +716,16 @@ export const commands = [
       const locMsg = quoted?.locationMessage;
       
       if (!locMsg) {
-        return await sock.sendMessage(from, { text: MESSAGES.whatsapp.location.noReply }, { quoted: msg });
+        const noReplyMsg = await t(from, 'whatsapp', 'location.noReply');
+        return await sock.sendMessage(from, { text: noReplyMsg }, { quoted: msg });
       }
       
       const { degreesLatitude, degreesLongitude } = locMsg;
       const mapUrl = `https://maps.google.com/?q=${degreesLatitude},${degreesLongitude}`;
       
+      const resultTemplate = await t(from, 'whatsapp', 'location.result');
       await sock.sendMessage(from, {
-        text: MESSAGES.whatsapp.location.result.replace('{url}', mapUrl),
+        text: resultTemplate.replace('{url}', mapUrl),
         previewType: 0,
         contextInfo: { isForwarded: true }
       }, { quoted: msg });

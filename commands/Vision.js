@@ -1,5 +1,6 @@
 import { downloadMediaMessage } from '@whiskeysockets/baileys';
 import { geminiVision2, MESSAGES } from '../france/index.js';
+import { t, translate, translateAIResponse, getUserLang } from '../france/translator.js';
 
 export const commands = [
   {
@@ -12,15 +13,17 @@ export const commands = [
       const botName = config.BOT_NAME || 'Flash-MD';
 
       if (!quoted || !quoted.imageMessage) {
+        const noImageMsg = await t(from, 'vision', 'noImage');
         return sock.sendMessage(from, {
-          text: MESSAGES.vision.noImage
+          text: noImageMsg
         }, { quoted: msg });
       }
 
       const query = args.join(' ');
       if (!query) {
+        const noQueryMsg = await t(from, 'vision', 'noQuery');
         return sock.sendMessage(from, {
-          text: MESSAGES.vision.noQuery
+          text: noQueryMsg
         }, { quoted: msg });
       }
 
@@ -34,9 +37,13 @@ export const commands = [
 
         const base64Image = buffer.toString('base64');
         const result = await geminiVision2(base64Image, query);
+        
+        const translatedResult = await translateAIResponse(from, result);
+        
+        const successTemplate = await t(from, 'vision', 'success');
 
         await sock.sendMessage(from, {
-          text: MESSAGES.vision.success.replace('{result}', result),
+          text: successTemplate.replace('{result}', translatedResult),
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -49,8 +56,9 @@ export const commands = [
         }, { quoted: msg });
 
       } catch (err) {
+        const errorTemplate = await t(from, 'vision', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.vision.error.replace('{error}', err.message)
+          text: errorTemplate.replace('{error}', err.message)
         }, { quoted: msg });
       }
     }

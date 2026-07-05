@@ -1,1 +1,66 @@
-{"name":"flash-md-v3","version":"3.0.0","description":"Advanced WhatsApp Multi-Device Bot using Baileys","main":"index.js","type":"module","scripts":{"start":"node index.js","dev":"node --watch index.js"},"engines":{"node":"20.x","npm":"10.x"},"keywords":["whatsapp","bot","baileys","multi-device","automation"],"author":"franceking1","license":"MIT","dependencies":{"@whiskeysockets/baileys":"7.0.0-rc.9","@hapi/boom":"^10.0.1","axios":"^1.4.0","adm-zip":"0.5.16","dotenv":"^16.3.1","pino":"^8.15.1","express":"^4.19.2","yt-search":"^2.10.4","performance-now":"^2.1.0","fs-extra":"^11.1.1","fluent-ffmpeg":"^2.1.2","ffmpeg-static":"5.2.0","heroku-client":"^3.1.0","wa-sticker-formatter":"^4.4.4","node-catbox":"^3.2.0","file-type":"21.0.0","ws":"^8.18.0","cheerio":"^1.0.0-rc.10","qs":"^6.11.6","@xaviabot/fb-downloader":"^1.0.14","aptoide_scrapper_fixed":"1.0.2","mumaker":"^2.0.0","moment-timezone":"^0.5.43","acrcloud":"^1.4.0","jimp":"1.6.0","pg":"^8.11.2","g-i-s":"^2.1.7","node-cron":"^3.0.3","translatte":"^3.0.1","pino-pretty":"^10.0.0","ruhend-scraper":"9.0.8","puppeteer":"^23.1.1","node-fetch":"^3.3.2"},"devDependencies":{"nodemon":"^3.0.1"},"repository":{"type":"git","url":"git+https://github.com/franceking1/flash-md-v3.git"},"bugs":{"url":"https://github.com/franceking1/flash-md-v3/issues"},"homepage":"https://github.com/franceking1/flash-md-v3#readme","funding":{"type":"individual","url":"https://github.com/sponsors/franceking1"}}
+{
+  "name": "Flash-Md-V3",
+  "version": "3.0.0",
+  "description": "Advanced WhatsApp Multi-Device Bot using Baileys",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node flash.js && node --loader ./preload.js index.js",
+    "dev": "node index.js",
+    "postinstall": "PUPPETEER_SKIP_DOWNLOAD=true npm rebuild sharp --force"
+  },
+  "engines": {
+    "node": ">=20.x <=24.x",
+    "npm": ">=9.x"
+  },
+  "author": "franceking1",
+  "license": "MIT",
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@whiskeysockets/baileys": "git+https://lyfe00011-admin@bitbucket.org/lyfe00011/baileys.git",
+    "@xaviabot/fb-downloader": "^1.0.14",
+    "adm-zip": "0.5.16",
+    "aptoide_scrapper_fixed": "1.0.2",
+    "archiver": "^8.0.0",
+    "axios": "^1.4.0",
+    "cheerio": "^1.0.0-rc.10",
+    "dotenv": "^16.3.1",
+    "express": "^4.19.2",
+    "file-type": "21.0.0",
+    "form-data": "^4.0.5",
+    "fs-extra": "^11.1.1",
+    "g-i-s": "^2.1.7",
+    "heroku-client": "^3.1.1",
+    "mime-types": "^3.0.2",
+    "moment-timezone": "^0.5.43",
+    "mumaker": "^2.0.0",
+    "nayan-api-servers": "^2.4.8",
+    "nayan-media-downloaders": "^0.1.8",
+    "node-catbox": "4.2.0",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.2",
+    "performance-now": "^2.1.0",
+    "pino": "^8.15.1",
+    "qs": "^6.11.6",
+    "ruhend-scraper": "9.0.8",
+    "simple-xml-to-json": "1.0.0",
+    "translatte": "^3.0.1",
+    "wa-sticker-formatter": "^4.4.4",
+    "ws": "^8.18.0",
+    "yt-search": "^2.10.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "optionalDependencies": {
+    "acrcloud": "^1.4.0",
+    "ffmpeg-static": "5.2.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "jimp": "^1.6.0",
+    "puppeteer": "^23.1.1",
+    "sharp": "^0.33.5"
+  },
+  "overrides": {
+    "sharp": "^0.33.5"
+  }
+}

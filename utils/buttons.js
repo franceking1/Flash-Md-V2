@@ -80,4 +80,5 @@ export function createNumberPadButtons() {
     ],
     headerType: 1
   };
-} 
+}
+

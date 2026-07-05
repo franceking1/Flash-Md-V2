@@ -1,6 +1,7 @@
 import os from 'os';
 import moment from 'moment-timezone';
 import { detectPlatform, formatUptime, MESSAGES } from '../france/index.js';
+import { t, translate, translateAIResponse, getUserLang } from '../france/translator.js';
 
 const botStartTime = Date.now();
 
@@ -18,7 +19,8 @@ export const commands = [
       const uptimeBot = formatUptime((Date.now() - botStartTime) / 1000);
       const time = moment().tz('Africa/Nairobi').format('HH:mm:ss | DD/MM/YYYY');
       
-      const hostInfo = MESSAGES.host.info
+      const hostInfoTemplate = await t(from, 'host', 'info');
+      const hostInfo = hostInfoTemplate
         .replace('{platform}', platform)
         .replace('{time}', time)
         .replace('{uptime}', uptimeBot)
@@ -40,8 +42,9 @@ export const commands = [
         }, { quoted: msg });
       } catch (error) {
         console.error('Error in host command:', error);
+        const errorMsg = await t(from, 'host', 'error');
         await sock.sendMessage(from, {
-          text: MESSAGES.host.error.replace('{error}', error.response?.status || error.message)
+          text: errorMsg.replace('{error}', error.response?.status || error.message)
         }, { quoted: msg });
       }
     }

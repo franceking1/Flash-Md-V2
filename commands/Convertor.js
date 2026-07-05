@@ -14,6 +14,7 @@ import { tmpdir } from 'os';
 import { Sticker } from 'wa-sticker-formatter';
 import ffmpegStatic from 'ffmpeg-static';
 import fluentFfmpeg from 'fluent-ffmpeg';
+import axios from 'axios';
 
 const execPromise = util.promisify(exec);
 const ffmpeg = fluentFfmpeg;
@@ -87,6 +88,79 @@ export const commands = [
       }
     }
   },
+{
+  name: 'quotly',
+  aliases: ['quote', 'q'],
+  description: 'Create a quote sticker with text and username',
+  category: 'General',
+  execute: async ({ sock, from, text, msg }) => {
+    if (!text) {
+      return sock.sendMessage(from, {
+        text: '❌ *Please provide text and username.*\n\nExample: `.quotly am the best by France King`'
+      });
+    }
+
+    try {
+      const byIndex = text.toLowerCase().indexOf(' by ');
+      
+      if (byIndex === -1) {
+        return sock.sendMessage(from, {
+          text: '❌ *Invalid format.*\n\nUse: `.quotly your message by username`\nExample: `.quotly am the best by France King`'
+        });
+      }
+
+      const message = text.substring(0, byIndex).trim();
+      const username = text.substring(byIndex + 4).trim();
+
+      if (!message || !username) {
+        return sock.sendMessage(from, {
+          text: '❌ *Both message and username are required.*'
+        });
+      }
+
+      await sock.sendMessage(from, {
+        text: '🖼️ *Generating quote sticker...* Please wait.'
+      });
+
+      const pfpUrl = 'https://telegra.ph/file/e991bb4b535a0f1425aa0.jpg';
+      const apiUrl = `https://weeb-api.vercel.app/quotly?pfp=${encodeURIComponent(pfpUrl)}&username=${encodeURIComponent(username)}&text=${encodeURIComponent(message)}`;
+      
+      const response = await axios.get(apiUrl, { 
+        responseType: 'arraybuffer',
+        timeout: 15000
+      });
+      
+      if (response.status !== 200 || response.data.length < 1000) {
+        return sock.sendMessage(from, {
+          text: '❌ *API returned invalid image.* Please try again.'
+        });
+      }
+      
+      const imageBuffer = Buffer.from(response.data);
+      
+      const { Sticker, StickerTypes } = await import('wa-sticker-formatter');
+      
+      const sticker = new Sticker(imageBuffer, {
+        pack: 'FLASH-MD-V3',
+        author: username,
+        type: StickerTypes.FULL,
+        quality: 100
+      });
+      
+      const stickerBuffer = await sticker.toBuffer();
+      
+      await sock.sendMessage(from, {
+        sticker: stickerBuffer
+      });
+
+    } catch (error) {
+      console.error('Quotly error:', error.message);
+      await sock.sendMessage(from, {
+        text: '❌ *Failed to generate quote sticker.* Please try again.'
+      });
+    }
+  }
+}, 
   {
     name: 'toimg',
     aliases: ['photo'],

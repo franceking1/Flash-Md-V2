@@ -1,4 +1,5 @@
 import { normalizeJid, saveSudoList, MESSAGES } from '../france/index.js';
+import { t, translate, translateAIResponse, getUserLang } from '../france/translator.js';
 
 export const commands = [
   {
@@ -12,21 +13,24 @@ export const commands = [
       if (commandType === 'list') {
         const list = [...global.ALLOWED_USERS];
         if (list.length === 0) {
+          const listEmptyMsg = await t(from, 'sudo', 'listEmpty');
           return sock.sendMessage(from, {
-            text: MESSAGES.sudo.listEmpty
+            text: listEmptyMsg
           }, { quoted: msg });
         }
 
-        const text = MESSAGES.sudo.listHeader + list.map((n, i) => `${i + 1}. +${n}`).join('\n');
-        return sock.sendMessage(from, { text }, { quoted: msg });
+        const listHeaderMsg = await t(from, 'sudo', 'listHeader');
+        const responseText = listHeaderMsg + list.map((n, i) => `${i + 1}. +${n}`).join('\n');
+        return sock.sendMessage(from, { text: responseText }, { quoted: msg });
       }
 
       const quoted = msg.message?.extendedTextMessage?.contextInfo?.participant ||
-                     msg.message?.extendedTextMessage?.contextInfo?.remoteJid;
+                     msg.message?.extendedTextMessage?.contextInfo?.remoteJidAlt;
 
       if (!quoted) {
+        const noReplyMsg = await t(from, 'sudo', 'noReply');
         return sock.sendMessage(from, {
-          text: MESSAGES.sudo.noReply
+          text: noReplyMsg
         }, { quoted: msg });
       }
 
@@ -36,18 +40,21 @@ export const commands = [
       if (commandType === 'add') {
         global.ALLOWED_USERS.add(number);
         saveSudoList(global.ALLOWED_USERS);
+        const addedMsg = await t(from, 'sudo', 'added');
         return sock.sendMessage(from, {
-          text: MESSAGES.sudo.added.replace('{number}', number)
+          text: addedMsg.replace('{number}', number)
         }, { quoted: msg });
       } else if (commandType === 'del') {
         global.ALLOWED_USERS.delete(number);
         saveSudoList(global.ALLOWED_USERS);
+        const removedMsg = await t(from, 'sudo', 'removed');
         return sock.sendMessage(from, {
-          text: MESSAGES.sudo.removed.replace('{number}', number)
+          text: removedMsg.replace('{number}', number)
         }, { quoted: msg });
       } else {
+        const invalidMsg = await t(from, 'sudo', 'invalid');
         return sock.sendMessage(from, {
-          text: MESSAGES.sudo.invalid
+          text: invalidMsg
         }, { quoted: msg });
       }
     }

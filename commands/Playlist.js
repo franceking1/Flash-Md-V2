@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_CONFIG, MESSAGES } from '../france/index.js';
 import yts from 'yt-search';
+import { t, translate, translateAIResponse, getUserLang } from '../france/translator.js';
 
 export const commands = [
   {
@@ -10,14 +11,16 @@ export const commands = [
     category: 'Search',
     execute: async ({ sock, from, text, msg, config }) => {
       if (!text) {
+        const noQueryMsg = await t(from, 'playlist', 'noQuery');
         return sock.sendMessage(from, { 
-          text: MESSAGES.playlist.noQuery
+          text: noQueryMsg
         }, { quoted: msg });
       }
 
       try {
+        const fetchingMsg = await t(from, 'playlist', 'fetching');
         await sock.sendMessage(from, { 
-          text: MESSAGES.playlist.fetching
+          text: fetchingMsg
         }, { quoted: msg });
 
         let playlistUrl = text;
@@ -28,8 +31,9 @@ export const commands = [
           const video = search.videos?.[0];
           
           if (!video) {
+            const noResultsMsg = await t(from, 'playlist', 'noResults');
             return sock.sendMessage(from, { 
-              text: MESSAGES.playlist.noResults
+              text: noResultsMsg
             }, { quoted: msg });
           }
           
@@ -45,25 +49,34 @@ export const commands = [
 
         const { title, total, videos } = response.data;
         const botName = config.BOT_NAME || 'FLASH-MD V3';
+        const userLang = getUserLang(from);
 
-        let playlistText = `🎵 *${botName} PLAYLIST*\n\n`;
-        playlistText += `📋 *${title || 'MIX'}*\n`;
-        playlistText += `📊 *Total Videos:* ${total}\n\n`;
+        const playlistHeader = await t(from, 'playlist', 'header');
+        const playlistTitle = await t(from, 'playlist', 'playlistTitle');
+        const totalLabel = await t(from, 'playlist', 'total');
+        const durationLabel = await t(from, 'playlist', 'duration');
+        const moreMsg = await t(from, 'playlist', 'more');
+        const usageMsg = await t(from, 'playlist', 'usage');
+        const poweredMsg = await t(from, 'playlist', 'powered');
+
+        let playlistText = `🎵 *${playlistHeader}*\n\n`;
+        playlistText += `${playlistTitle} ${title || 'MIX'}\n`;
+        playlistText += `${totalLabel} ${total}\n\n`;
 
         const limitedVideos = videos.slice(0, 10);
         
         limitedVideos.forEach((video, index) => {
           playlistText += `${index + 1}. *${video.title}*\n`;
-          playlistText += `   ⏱️ Duration: ${video.duration}\n`;
+          playlistText += `   ${durationLabel} ${video.duration}\n`;
           playlistText += `   🔗 ${video.url}\n\n`;
         });
 
         if (total > 10) {
-          playlistText += `_...and ${total - 10} more videos_\n`;
+          playlistText += moreMsg.replace('{remaining}', total - 10);
         }
 
-        playlistText += `\n_✨ Use .play <video title> to download any song_`;
-        playlistText += `\n\n⚡ *Powered by ${botName}*`;
+        playlistText += `\n${usageMsg}`;
+        playlistText += `\n\n${poweredMsg} ${botName}`;
 
         const thumbnail = limitedVideos[0]?.thumbnail;
 
@@ -84,16 +97,18 @@ export const commands = [
       } catch (error) {
         console.error('Playlist error:', error);
         
-        let errorMessage = MESSAGES.playlist.error;
+        let errorMessageKey = 'error';
         
         if (error.code === 'ECONNABORTED') {
-          errorMessage = MESSAGES.playlist.timeout;
+          errorMessageKey = 'timeout';
         } else if (error.response?.status === 404) {
-          errorMessage = MESSAGES.playlist.notFound;
+          errorMessageKey = 'notFound';
         }
         
+        const errorMsg = await t(from, 'playlist', errorMessageKey);
+        
         return sock.sendMessage(from, { 
-          text: errorMessage
+          text: errorMsg
         }, { quoted: msg });
       }
     }
